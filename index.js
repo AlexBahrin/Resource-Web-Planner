@@ -94,10 +94,186 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   try { 
+    // Serve HTML for login page at "/"
     if (path === '/' && method === 'GET') {
-      res.writeHead(200);
-      res.end(JSON.stringify({ message: 'Welcome to the Inventory Management System with PostgreSQL!' }));
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Login</title>
+          <style>
+            body { font-family: Arial; margin: 40px; }
+            form { max-width: 300px; margin: auto; }
+            input { display: block; margin: 10px 0; width: 100%; padding: 8px; }
+            button { padding: 8px 16px; }
+            .link { text-align: center; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h2>Login</h2>
+          <form method="POST" action="/main">
+            <input type="text" name="username" placeholder="Username" required />
+            <input type="password" name="password" placeholder="Password" required />
+            <button type="submit">Login</button>
+          </form>
+          <div class="link">
+            <a href="/register">Register</a>
+          </div>
+        </body>
+        </html>
+      `);
+      return;
     }
+
+    // Serve HTML for register page at "/register"
+    if (path === '/register' && method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Register</title>
+          <style>
+            body { font-family: Arial; margin: 40px; }
+            form { max-width: 300px; margin: auto; }
+            input { display: block; margin: 10px 0; width: 100%; padding: 8px; }
+            button { padding: 8px 16px; }
+            .link { text-align: center; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h2>Register</h2>
+          <form method="POST" action="/register">
+            <input type="text" name="username" placeholder="Username" required />
+            <input type="email" name="email" placeholder="Email" required />
+            <input type="password" name="password" placeholder="Password" required />
+            <button type="submit">Register</button>
+          </form>
+          <div class="link">
+            <a href="/">Back to Login</a>
+          </div>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
+    // Handle register POST
+    if (path === '/register' && method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', async () => {
+        // Parse x-www-form-urlencoded
+        const params = {};
+        body.split('&').forEach(pair => {
+          const [k, v] = pair.split('=');
+          params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+        });
+        const { username, email, password } = params;
+        if (!username || !email || !password) {
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end('<h3>All fields are required.</h3>');
+          return;
+        }
+        try {
+          const result = await pool.query(
+            'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING username',
+            [username, email, password]
+          );
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(`<h3>Registration successful. <a href="/">Login here</a>.</h3>`);
+        } catch (dbErr) {
+          if (dbErr.code === '23505') {
+            res.writeHead(409, { 'Content-Type': 'text/html' });
+            res.end('<h3>Username or email already exists. <a href="/register">Try again</a>.</h3>');
+          } else {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end('<h3>Server error.</h3>');
+          }
+        }
+      });
+      return;
+    }
+
+    // Handle login POST
+    if (path === '/main' && method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', async () => {
+        // Parse x-www-form-urlencoded
+        const params = {};
+        body.split('&').forEach(pair => {
+          const [k, v] = pair.split('=');
+          params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+        });
+        const { username, password } = params;
+        if (!username || !password) {
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end('<h3>Username and password required.</h3>');
+          return;
+        }
+        try {
+          const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+          if (result.rows.length === 0) {
+            res.writeHead(401, { 'Content-Type': 'text/html' });
+            res.end('<h3>Invalid username or password.</h3>');
+            return;
+          }
+          const user = result.rows[0];
+          // NOTE: In production, use hashed passwords!
+          if (user.password_hash !== password) {
+            res.writeHead(401, { 'Content-Type': 'text/html' });
+            res.end('<h3>Invalid username or password.</h3>');
+            return;
+          }
+          // Show dashboard with 4 buttons
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Dashboard</title>
+              <style>
+                body { font-family: Arial; margin: 40px; }
+                .container { max-width: 400px; margin: auto; text-align: center; }
+                h2 { margin-bottom: 30px; }
+                .btn-group { display: flex; flex-direction: column; gap: 15px; }
+                .btn-group a {
+                  display: block;
+                  padding: 14px 0;
+                  background: #1976d2;
+                  color: #fff;
+                  text-decoration: none;
+                  border-radius: 6px;
+                  font-size: 18px;
+                  font-weight: bold;
+                  transition: background 0.2s;
+                }
+                .btn-group a:hover { background: #1565c0; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h2>Welcome, ${user.username}!</h2>
+                <div class="btn-group">
+                  <a href="/categories">Categories</a>
+                  <a href="/resources">Resources</a>
+                  <a href="/users">Users</a>
+                  <a href="/notifications">Notifications</a>
+                </div>
+              </div>
+            </body>
+            </html>
+          `);
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'text/html' });
+          res.end('<h3>Server error.</h3>');
+        }
+      });
+      return;
+    }
+
     else if (path === '/resources' && method === 'POST') {
       parseRequestBody(async data => {
         const { name, category_id, quantity, description, low_stock_threshold } = data;
