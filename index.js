@@ -274,6 +274,49 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Serve dashboard page at /main (GET)
+    if (path === '/main' && method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Dashboard</title>
+          <style>
+            body { font-family: Arial; margin: 40px; }
+            .container { max-width: 400px; margin: auto; text-align: center; }
+            h2 { margin-bottom: 30px; }
+            .btn-group { display: flex; flex-direction: column; gap: 15px; }
+            .btn-group a {
+              display: block;
+              padding: 14px 0;
+              background: #1976d2;
+              color: #fff;
+              text-decoration: none;
+              border-radius: 6px;
+              font-size: 18px;
+              font-weight: bold;
+              transition: background 0.2s;
+            }
+            .btn-group a:hover { background: #1565c0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Dashboard</h2>
+            <div class="btn-group">
+              <a href="/categories">Categories</a>
+              <a href="/resources">Resources</a>
+              <a href="/users">Users</a>
+              <a href="/notifications">Notifications</a>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
     else if (path === '/resources' && method === 'POST') {
       parseRequestBody(async data => {
         const { name, category_id, quantity, description, low_stock_threshold } = data;
@@ -397,9 +440,78 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(result.rows[0]));
       });
     } else if (path === '/categories' && method === 'GET') {
-      const result = await pool.query('SELECT * FROM categories ORDER BY id ASC');
-      res.writeHead(200);
-      res.end(JSON.stringify(result.rows));
+      try {
+        const result = await pool.query('SELECT * FROM categories ORDER BY id ASC');
+        const categories = result.rows;
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Categories</title>
+            <style>
+              body { font-family: Arial; margin: 40px; }
+              .container { max-width: 400px; margin: auto; }
+              h2 { margin-bottom: 20px; }
+              ul { padding: 0; list-style: none; }
+              li { padding: 8px 0; border-bottom: 1px solid #eee; }
+              .add-btn {
+                display: inline-block;
+                margin-bottom: 20px;
+                padding: 8px 16px;
+                background: #43a047;
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+                text-decoration: none;
+              }
+              .add-form { margin-top: 20px; }
+              .add-form input[type="text"] {
+                padding: 8px;
+                width: 70%;
+                margin-right: 10px;
+              }
+              .add-form button {
+                padding: 8px 16px;
+                background: #1976d2;
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+              }
+              .back-link { display: block; margin-top: 20px; }
+            </style>
+            <script>
+              function showForm() {
+                document.getElementById('addForm').style.display = 'block';
+                document.getElementById('showAddBtn').style.display = 'none';
+              }
+            </script>
+          </head>
+          <body>
+            <div class="container">
+              <h2>Categories</h2>
+              <ul>
+                ${categories.map(cat => `<li>${cat.name}</li>`).join('')}
+              </ul>
+              <button class="add-btn" id="showAddBtn" onclick="showForm()">+ Add Category</button>
+              <form id="addForm" class="add-form" method="POST" action="/categories/add" style="display:none;">
+                <input type="text" name="name" placeholder="Category name" required />
+                <button type="submit">Add</button>
+              </form>
+              <a class="back-link" href="/main">Back to Dashboard</a>
+            </div>
+          </body>
+          </html>
+        `);
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'text/html' });
+        res.end('<h3>Server error loading categories.</h3>');
+      }
+      return;
     } else if (path.startsWith('/categories/') && method === 'GET') {
       const id = parseInt(path.split('/')[2]);
       if (isNaN(id)) {
@@ -459,6 +571,35 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(204);
         res.end();
       }
+    } else if (path === '/categories/add' && method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', async () => {
+        const params = {};
+        body.split('&').forEach(pair => {
+          const [k, v] = pair.split('=');
+          params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+        });
+        const { name } = params;
+        if (!name) {
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end('<h3>Category name is required. <a href="/categories">Back</a></h3>');
+          return;
+        }
+        try {
+          await pool.query('INSERT INTO categories (name) VALUES ($1)', [name]);
+          res.writeHead(302, { Location: '/categories' });
+          res.end();
+        } catch (dbErr) {
+          let msg = 'Server error.';
+          if (dbErr.code === '23505') {
+            msg = 'Category already exists.';
+          }
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end(`<h3>${msg} <a href="/categories">Back</a></h3>`);
+        }
+      });
+      return;
     }
     else if (path === '/users' && method === 'POST') {
       parseRequestBody(async data => {
@@ -585,3 +726,4 @@ process.on('SIGINT', async () => {
 });
 
 module.exports = server;
+
