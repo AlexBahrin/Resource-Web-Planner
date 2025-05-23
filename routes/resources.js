@@ -39,13 +39,26 @@ async function handleResources(req, res) {
     return true;
   }
   
-  // List all resources
+  // List all resources as JSON API
+  if (path === '/api/resources' && method === 'GET') {
+    const result = await pool.query('SELECT * FROM resources ORDER BY id ASC');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result.rows));
+    return true;
+  }
+
+  // List all resources (this was the original /resources GET handler, now effectively for HTML via serveResourcesPage)
+  // if (path === '/resources' && method === 'GET') { ... }
+  // This block can be removed or commented out if serveResourcesPage in index.js handles HTML serving.
+  // For clarity, I will comment it out, assuming index.js handles the HTML page for /resources.
+  /*
   if (path === '/resources' && method === 'GET') {
     const result = await pool.query('SELECT * FROM resources ORDER BY id ASC');
     res.writeHead(200);
     res.end(JSON.stringify(result.rows));
     return true;
   }
+  */
   
   // Get a single resource
   if (path.startsWith('/resources/') && method === 'GET') {

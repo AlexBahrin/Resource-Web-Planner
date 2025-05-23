@@ -1,24 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Categories</title>
-  <link rel="stylesheet" href="/css/styles.css">
-  <script src="/js/categories.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div class="container">
-    <h2>Categories</h2>
-    <ul id="categories-list">
-      <!-- Category items will be inserted here dynamically -->
-    </ul>
-    <button class="add-btn" id="showAddBtn" onclick="showForm()">+ Add Category</button>
-    <form id="addForm" class="add-form" method="POST" action="/categories/add" style="display:none;">
-      <input type="text" name="name" placeholder="Category name" required />
-      <button type="submit">Add</button>
-    </form>
-    <a class="back-link" href="/main">Back to Dashboard</a>
-  </div>
+    <div class="container">
+        <h2>Manage Categories</h2>
+        
+        <main>
+            <h3>Categories List</h3>
+            <ul id="categories-list" class="data-list">
+                <!-- Categories will be loaded here by JavaScript -->
+                <li>Loading categories...</li>
+            </ul>
+            
+            <h3>Add New Category</h3>
+            <form id="add-category-form" class="add-form">
+                <div class="form-group">
+                    <label for="category-name">Category Name:</label>
+                    <input type="text" id="category-name" name="categoryName" required>
+                    <button type="submit" class="add-btn">Add Category</button>
+                </div>
+            </form>
+        </main>
+
+        <a class="back-link" href="/main">Back to Dashboard</a>
+    </div>
+    <script src="/js/categories.js"></script>
 </body>
-</html>
 </html>

@@ -11,7 +11,7 @@ function readHtmlFile(filename) {
 const loginPage = readHtmlFile('login.html');
 const registerPage = readHtmlFile('register.html');
 const dashboardHtml = readHtmlFile('dashboard.html');
-const categoriesHtml = readHtmlFile('categories.html');
+const categoriesHtml = readHtmlFile('categories.html'); // Re-add categories.html
 const resourcesHtml = readHtmlFile('resources.html');
 const usersHtml = readHtmlFile('users.html');
 const notificationsHtml = readHtmlFile('notifications.html');
@@ -23,14 +23,9 @@ const dashboardPage = (username = '') => {
                                `<h2 id="welcome-message">Welcome, ${username}!</h2>`);
 };
 
-// Function to render the categories page with category list
-const categoriesPage = (categories) => {
-  const categoriesList = categories
-    .map(cat => `<li>${cat.name}</li>`)
-    .join('');
-  
-  return categoriesHtml.replace('<!-- Category items will be inserted here dynamically -->', 
-                               categoriesList);
+// Function to render the categories page (basic version, client-side will populate data)
+const categoriesPage = () => {
+  return categoriesHtml;
 };
 
 // Export additional templates
@@ -38,7 +33,7 @@ module.exports = {
   loginPage,
   registerPage,
   dashboardPage,
-  categoriesPage,
+  categoriesPage, // Re-add categoriesPage
   resourcesHtml,
   usersHtml,
   notificationsHtml

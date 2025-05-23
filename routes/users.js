@@ -45,6 +45,14 @@ async function handleUsers(req, res) {
     return true;
   }
   
+  // List all users as JSON API
+  if (path === '/api/users' && method === 'GET') {
+    const result = await pool.query('SELECT id, username, email, created_at FROM users ORDER BY id ASC');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result.rows));
+    return true;
+  }
+  
   // Get a single user
   if (path.startsWith('/users/') && method === 'GET') {
     const id = parseInt(path.split('/')[2]);

@@ -1,7 +1,7 @@
 // Client-side JavaScript for users page
 document.addEventListener('DOMContentLoaded', function() {
   // Fetch users data
-  fetch('/users')
+  fetch('/api/users')
     .then(response => response.json())
     .then(users => {
       const usersList = document.getElementById('users-list');

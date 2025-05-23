@@ -141,25 +141,27 @@ li:hover {
 .add-form {
   margin-top: 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* Aligns items to the bottom (e.g., button with input field) */
+  gap: 10px; /* Creates space between the input group and button group */
 }
 
-.add-form input[type="text"] {
-  flex: 1;
-  padding: 10px;
-  margin-right: 10px;
-  margin-bottom: 0;
+.add-form .form-group:first-child { /* The group containing the label and input */
+  flex-grow: 1; /* Allows this group to expand and take available width */
 }
 
-.add-form button {
-  padding: 10px 16px;
-  background-color: #1976d2;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
+.add-form label {
+  display: block; /* Makes the label take its own line, appearing above the input */
+  margin-bottom: 5px; /* Adds a small space between the label and the input field */
+  font-weight: bold;
+  font-size: 0.9em; /* Slightly smaller font for the label */
+  color: #555;
 }
+
+.add-form button.add-btn {
+    /* The .add-btn class already provides most styling (green color, padding etc) */
+    margin-bottom: 0; /* Aligns button bottom with input bottom if input has no margin-bottom from global */
+}
+
 
 .back-link {
   display: block;

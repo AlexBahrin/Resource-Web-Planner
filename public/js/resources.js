@@ -1,7 +1,7 @@
 // Client-side JavaScript for resources page
 document.addEventListener('DOMContentLoaded', function() {
   // Fetch resources data
-  fetch('/resources')
+  fetch('/api/resources')
     .then(response => response.json())
     .then(resources => {
       const resourcesList = document.getElementById('resources-list');

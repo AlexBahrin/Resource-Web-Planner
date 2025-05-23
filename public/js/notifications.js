@@ -1,7 +1,7 @@
 // Client-side JavaScript for notifications page
 document.addEventListener('DOMContentLoaded', function() {
   // Fetch notifications data
-  fetch('/notifications')
+  fetch('/api/notifications')
     .then(response => response.json())
     .then(notifications => {
       const notificationsList = document.getElementById('notifications-list');
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
   // Function to mark notification as read
   function markNotificationAsRead(id, listItem) {
-    fetch(`/notifications/${id}`, {
+    fetch(`/api/notifications/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
