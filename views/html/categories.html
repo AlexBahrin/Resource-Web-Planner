@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Categories</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/categories.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+  <div class="container">
+    <h2>Categories</h2>
+    <ul id="categories-list">
+      <!-- Category items will be inserted here dynamically -->
+    </ul>
+    <button class="add-btn" id="showAddBtn" onclick="showForm()">+ Add Category</button>
+    <form id="addForm" class="add-form" method="POST" action="/categories/add" style="display:none;">
+      <input type="text" name="name" placeholder="Category name" required />
+      <button type="submit">Add</button>
+    </form>
+    <a class="back-link" href="/main">Back to Dashboard</a>
+  </div>
+</body>
+</html>
+</html>
