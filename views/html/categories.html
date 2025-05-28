@@ -11,20 +11,24 @@
         <h2>Manage Categories</h2>
         
         <main>
-            <h3>Categories List</h3>
-            <ul id="categories-list" class="data-list">
-                <!-- Categories will be loaded here by JavaScript -->
-                <li>Loading categories...</li>
-            </ul>
-            
-            <h3>Add New Category</h3>
+            <h3>Add/Edit Category</h3>
             <form id="add-category-form" class="add-form">
+                <input type="hidden" id="edit-category-id" name="editCategoryId">
                 <div class="form-group">
                     <label for="category-name">Category Name:</label>
                     <input type="text" id="category-name" name="categoryName" required>
+                </div>
+                <div class="form-buttons">
                     <button type="submit" class="add-btn">Add Category</button>
+                    <button type="button" id="cancel-edit-category-btn" class="cancel-btn" style="display: none;">Cancel</button>
                 </div>
             </form>
+
+            <h3>Categories List</h3>
+            <div id="categories-list-container">
+                <!-- Categories will be loaded here by JavaScript -->
+                <p>Loading categories...</p>
+            </div>
         </main>
 
         <a class="back-link" href="/main">Back to Dashboard</a>

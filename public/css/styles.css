@@ -27,6 +27,14 @@ body {
   border-bottom: 1px solid #eee;
 }
 
+.container h3 {
+    margin-top: 20px; /* Add some top margin to H3s */
+    margin-bottom: 15px; /* Space below H3s */
+    color: #444; /* Slightly softer color for section titles */
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
 /* Form styles */
 form {
   max-width: 400px;
@@ -140,15 +148,64 @@ li:hover {
 
 .add-form {
   margin-top: 20px;
-  display: flex;
-  align-items: flex-end; /* Aligns items to the bottom (e.g., button with input field) */
-  gap: 10px; /* Creates space between the input group and button group */
+  /* display: flex; */ /* Remove this if .form-group is now the flex container */
+  /* align-items: flex-end; */ /* Remove this */
+  /* gap: 10px; */ /* Remove this */
 }
 
-.add-form .form-group:first-child { /* The group containing the label and input */
-  flex-grow: 1; /* Allows this group to expand and take available width */
+/* Specific styling for the add-category-form */
+#add-category-form .form-group {
+    /* This group now only contains label and input */
+    width: 100%; 
+    margin-bottom: 15px; /* Add space between input group and button group */
 }
 
+#add-category-form .form-group label {
+    display: block; /* Label above input */
+    margin-bottom: 5px; /* Space between label and input */
+    font-weight: bold; 
+    font-size: 0.9em; 
+    color: #555; 
+}
+
+#add-category-form .form-group input[type="text"] {
+    box-sizing: border-box; 
+    width: 100%; /* Input takes full width of its container */
+    /* Padding, font-size, border from global input styles */
+}
+
+#add-category-form .form-buttons {
+    display: flex; /* Align buttons in a row */
+    gap: 10px; /* Space between buttons */
+    justify-content: flex-start; /* Align buttons to the start, or use 'center' or 'flex-end' as needed */
+}
+
+#add-category-form .form-buttons button {
+    box-sizing: border-box; 
+    flex-grow: 1; /* Make buttons share the space equally */
+    margin: 0; /* Reset any inherited margins (e.g., from global .add-btn) */
+    padding: 10px 16px; /* Standardize padding for consistent height and appearance */
+    font-size: 16px; /* Standardize font size */
+    border-width: 1px; 
+    border-style: solid;
+    text-align: center;
+    line-height: normal; /* Ensure consistent line height */
+}
+
+#add-category-form .form-buttons .add-btn {
+    /* Inherits background-color & color from global .add-btn or specific .add-btn rules */
+    /* Padding, font-size, margin are now standardized by the rule above */
+    border-color: #388e3c; 
+}
+
+#add-category-form .form-buttons .cancel-btn {
+    background-color: #6c757d; /* Standard grey for cancel/secondary */
+    color: white;
+    border-color: #5a6268; 
+    /* Padding, font-size, margin are now standardized by the rule above */
+}
+
+/* General .add-form label (if still needed for other forms, otherwise can be more specific) */
 .add-form label {
   display: block; /* Makes the label take its own line, appearing above the input */
   margin-bottom: 5px; /* Adds a small space between the label and the input field */
@@ -169,7 +226,8 @@ li:hover {
   flex-direction: column; /* Stack form elements vertically */
   align-items: center; /* Center children (form-groups and button) horizontally */
   gap: 15px; /* Space between form groups */
-  margin-top: 20px;
+  margin-top: 0; /* Adjusted from 20px as it's now at the top */
+  margin-bottom: 30px; /* Add some space before the resources list */
   padding: 20px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -225,6 +283,38 @@ li:hover {
   width: auto; /* Allow button to size based on content */
   /* align-self: center; /* Already centered by #add-resource-form's align-items: center */
   padding: 10px 20px;
+}
+
+/* Styling for Edit and Delete buttons in the table */
+.data-table .edit-btn,
+.data-table .delete-btn {
+  padding: 6px 12px;
+  margin-right: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s, transform 0.2s;
+  border: none; 
+  color: white;
+}
+
+.data-table .edit-btn {
+  background-color: #ffc107; /* Amber */
+  color: #333;
+}
+
+.data-table .edit-btn:hover {
+  background-color: #e0a800;
+  transform: translateY(-1px);
+}
+
+.data-table .delete-btn {
+  background-color: #dc3545; /* Red */
+}
+
+.data-table .delete-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
 }
 
 
@@ -373,4 +463,11 @@ li:hover {
 
 .mark-read-btn:hover {
   background: #1565c0;
+}
+
+.section-divider {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    border: 0;
+    border-top: 1px solid #ccc;
 }

@@ -3,6 +3,7 @@ const { parseJsonBody } = require('../util/requestUtils');
 
 async function handleCategories(req, res) {
     const { method, path } = req;
+    const pathParts = path.split('/').filter(Boolean); // e.g., ['api', 'categories', '1']
 
     // GET /api/categories - Fetch all categories
     if (method === 'GET' && path === '/api/categories') {
@@ -46,6 +47,85 @@ async function handleCategories(req, res) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ message: 'Error adding category to database.', error: error.message }));
             }
+        }
+        return true;
+    }
+
+    // PUT /api/categories/:id - Update a category
+    if (method === 'PUT' && pathParts[0] === 'api' && pathParts[1] === 'categories' && pathParts.length === 3) {
+        const id = parseInt(pathParts[2]);
+        if (isNaN(id)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Invalid category ID format.' }));
+            return true;
+        }
+        try {
+            const body = await parseJsonBody(req, res);
+            if (!body || !body.name || typeof body.name !== 'string' || body.name.trim() === '') {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Category name is required and must be a non-empty string.' }));
+                return true;
+            }
+            const categoryName = body.name.trim();
+
+            // Check if category with this ID exists
+            const existingById = await pool.query('SELECT * FROM categories WHERE id = $1', [id]);
+            if (existingById.rows.length === 0) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Category not found.' }));
+                return true;
+            }
+
+            // Check for name conflict (optional: allow renaming to current name, but prevent conflict with *other* categories)
+            const existingByName = await pool.query('SELECT * FROM categories WHERE name = $1 AND id != $2', [categoryName, id]);
+            if (existingByName.rows.length > 0) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Another category with this name already exists.' }));
+                return true;
+            }
+
+            const result = await pool.query('UPDATE categories SET name = $1 WHERE id = $2 RETURNING *', [categoryName, id]);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result.rows[0]));
+        } catch (error) {
+            if (!res.headersSent) {
+                console.error('Error updating category:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Error updating category in database.', error: error.message }));
+            }
+        }
+        return true;
+    }
+
+    // DELETE /api/categories/:id - Delete a category
+    if (method === 'DELETE' && pathParts[0] === 'api' && pathParts[1] === 'categories' && pathParts.length === 3) {
+        const id = parseInt(pathParts[2]);
+        if (isNaN(id)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Invalid category ID format.' }));
+            return true;
+        }
+        try {
+            // Before deleting, check if any resources are using this category
+            const resourcesUsingCategory = await pool.query('SELECT COUNT(*) FROM resources WHERE category_id = $1', [id]);
+            if (parseInt(resourcesUsingCategory.rows[0].count, 10) > 0) {
+                res.writeHead(400, { 'Content-Type': 'application/json' }); // Or 409 Conflict
+                res.end(JSON.stringify({ message: 'Cannot delete category: It is currently associated with one or more resources. Please reassign or delete those resources first.' }));
+                return true;
+            }
+
+            const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING *', [id]);
+            if (result.rowCount === 0) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Category not found.' }));
+            } else {
+                res.writeHead(204, { 'Content-Type': 'application/json' }); // No Content
+                res.end();
+            }
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Error deleting category from database.', error: error.message }));
         }
         return true;
     }
