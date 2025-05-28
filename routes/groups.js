@@ -1,7 +1,7 @@
-const pool = require('../config/dbConfig'); // Ensure pool is imported
+const pool = require('../config/dbConfig'); 
 
 async function handleGroups(req, res, poolArgument) {
-    const currentPool = poolArgument; // Use the passed pool
+    const currentPool = poolArgument; 
 
     if (req.method === 'POST' && req.path === '/api/groups') {
         return new Promise((resolve) => {
@@ -19,7 +19,7 @@ async function handleGroups(req, res, poolArgument) {
                 let name;
                 try {
                     try {
-                        if (!body) { // Handle empty body before parsing
+                        if (!body) { 
                             if (!res.headersSent) {
                                 res.writeHead(400, { 'Content-Type': 'application/json' });
                                 res.end(JSON.stringify({ message: 'Request body is empty.' }));
@@ -48,7 +48,6 @@ async function handleGroups(req, res, poolArgument) {
                         return;
                     }
 
-                    // Database operation
                     try {
                         const result = await currentPool.query(
                             'INSERT INTO groups (name) VALUES ($1) RETURNING id, name, created_at',
@@ -78,7 +77,7 @@ async function handleGroups(req, res, poolArgument) {
                         res.end(JSON.stringify({ message: 'An unexpected server error occurred processing the request.' }));
                     }
                 } finally {
-                    resolve(); // Ensure the promise is always resolved
+                    resolve(); 
                 }
             });
         });
@@ -96,15 +95,12 @@ async function handleGroups(req, res, poolArgument) {
                 res.end(JSON.stringify({ message: 'Failed to fetch groups from the server.' }));
             }
         }
-        // For GET, if handleGroups is async, await in index.js handles it.
     } else if (req.path.startsWith('/api/groups')) {
-        // Handle other /api/groups paths or methods not allowed
         if (!res.headersSent) {
             res.writeHead(405, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: `Method ${req.method} not allowed for ${req.path}` }));
         }
     } else {
-        // This case should ideally not be reached if index.js routes correctly.
         if (!res.headersSent) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Group API endpoint not found by handler (routing logic error).' }));

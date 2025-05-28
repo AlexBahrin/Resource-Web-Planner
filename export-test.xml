@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<resources>
+  <resource>
+    <id>4</id>
+    <name>a</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>2</quantity>
+    <description/>
+    <low_stock_threshold>0</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>5</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>6</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>7</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>8</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>9</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>10</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>11</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>12</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>13</id>
+    <name>Test JSON Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>10</quantity>
+    <description>Imported via JSON test</description>
+    <low_stock_threshold>2</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>14</id>
+    <name>Test JSON Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>10</quantity>
+    <description>Imported via JSON test</description>
+    <low_stock_threshold>2</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>15</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>16</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>17</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>18</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>19</id>
+    <name>Test CSV Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>15</quantity>
+    <description>Imported via CSV test</description>
+    <low_stock_threshold>3</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>20</id>
+    <name>Test XML Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>20</quantity>
+    <description>Imported via XML test</description>
+    <low_stock_threshold>5</low_stock_threshold>
+  </resource>
+  <resource>
+    <id>21</id>
+    <name>Test JSON Import</name>
+    <category_id>1</category_id>
+    <category_name>aa</category_name>
+    <quantity>10</quantity>
+    <description>Imported via JSON test</description>
+    <low_stock_threshold>2</low_stock_threshold>
+  </resource>
+</resources>

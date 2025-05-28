@@ -1,0 +1,164 @@
+[
+  {
+    "id": 4,
+    "name": "a",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 2,
+    "description": null,
+    "low_stock_threshold": 0
+  },
+  {
+    "id": 5,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 6,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 7,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 8,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 9,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 10,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 11,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 12,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 13,
+    "name": "Test JSON Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 10,
+    "description": "Imported via JSON test",
+    "low_stock_threshold": 2
+  },
+  {
+    "id": 14,
+    "name": "Test JSON Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 10,
+    "description": "Imported via JSON test",
+    "low_stock_threshold": 2
+  },
+  {
+    "id": 15,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 16,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 17,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 18,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 19,
+    "name": "Test CSV Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 15,
+    "description": "Imported via CSV test",
+    "low_stock_threshold": 3
+  },
+  {
+    "id": 20,
+    "name": "Test XML Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 20,
+    "description": "Imported via XML test",
+    "low_stock_threshold": 5
+  },
+  {
+    "id": 21,
+    "name": "Test JSON Import",
+    "category_id": 1,
+    "category_name": "aa",
+    "quantity": 10,
+    "description": "Imported via JSON test",
+    "low_stock_threshold": 2
+  }
+]

@@ -10,13 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/**
- * Sends an email notification.
- * @param {string} toEmail The recipient's email address.
- * @param {string} subject The subject of the email.
- * @param {string} textBody The plain text body of the email.
- * @param {string} htmlBody The HTML body of the email (optional).
- */
+
 async function sendNotificationEmail(toEmail, subject, textBody, htmlBody) {
   if (!toEmail) {
     console.error('Email recipient not provided.');

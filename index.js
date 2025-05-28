@@ -9,8 +9,9 @@ const { handleCategories } = require('./routes/categories');
 const { handleResources } = require('./routes/resources');
 const { handleUsers } = require('./routes/users');
 const { handleNotifications } = require('./routes/notifications');
-const { handleGroups } = require('./routes/groups'); // Added groups handler
-const { serveResourcesPage, serveUsersPage, serveNotificationsPage } = require('./routes/pages');
+const { handleGroups } = require('./routes/groups');
+const { handleStatistics } = require('./routes/statistics');
+const { serveResourcesPage, serveUsersPage, serveNotificationsPage, serveStatisticsPage } = require('./routes/pages');
 
 const port = 8087;
 
@@ -58,6 +59,7 @@ const server = http.createServer(async (req, res) => {
   
   req.path = pathname;
   req.method = method;
+  req.query = parsedUrl.query;
 
   req.userId = null;
   req.username = null;
@@ -106,8 +108,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     
-    if (pathname === '/main' || pathname.startsWith('/api/') || pathname === '/categories' || pathname === '/resources' || pathname === '/users' || pathname === '/notifications') {
-      // Session check for all protected routes
+    if (pathname === '/main' || pathname.startsWith('/api/') || pathname === '/categories' || pathname === '/resources' || pathname === '/users' || pathname === '/notifications' || pathname === '/statistics') {
       const sessionId = req.headers.cookie?.split(';').find(c => c.trim().startsWith('sessionId='))?.split('=')[1];
       const session = sessions[sessionId];
 
@@ -116,37 +117,65 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(401, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Unauthorized. Please log in.' }));
         } else {
-            res.writeHead(302, { 'Location': '/' }); // Redirect to login
+            res.writeHead(302, { 'Location': '/' });
             res.end();
         }
         return;
       }
       req.userId = session.userId;
       req.username = session.username;
-      req.userRole = session.role; // Make role available in req
+      req.userRole = session.role; 
       console.log(`User ${req.username} (ID: ${req.userId}, Role: ${req.userRole}) authenticated for ${method} ${pathname}`);
     }
 
-    if (pathname === '/main' && method === 'GET') { // Serve dashboard
+    if (pathname === '/main' && method === 'GET') {
       handleDashboard(req, res);
+      return;
+    }
+    
+    // Handle import endpoint first as a special case
+    if (pathname === '/api/resources/import') {
+      console.log('Handling import request to', pathname);
+      const result = await handleResources(req, res);
+      console.log('Import handler result:', result);
+      // Always return after handling import request
+      return;
+    }
+    
+    // Handle export endpoint as a special case
+    if (pathname === '/api/resources/export') {
+      console.log('Handling export request to', pathname);
+      const result = await handleResources(req, res);
+      console.log('Export handler result:', result);
+      // Always return after handling export request
       return;
     }
 
     if (pathname.startsWith('/api/')) {
-      if (pathname.startsWith('/api/categories')) { // Changed from === to startsWith
-        await handleCategories(req, res, pool);
+      let handled = false;
+      
+      // Handle other API routes
+      if (pathname.startsWith('/api/categories')) {
+        handled = await handleCategories(req, res);
       } else if (pathname.startsWith('/api/resources')) {
-        await handleResources(req, res, pool);
+        handled = await handleResources(req, res);
       } else if (pathname.startsWith('/api/users')) {
-        await handleUsers(req, res, pool);
+        handled = await handleUsers(req, res);
       } else if (pathname.startsWith('/api/notifications')) {
-        await handleNotifications(req, res, pool);
-      } else if (pathname.startsWith('/api/groups')) { // Added groups route
-        await handleGroups(req, res, pool);
-      } else {
+        handled = await handleNotifications(req, res);
+      } else if (pathname.startsWith('/api/groups')) {
+        handled = await handleGroups(req, res);
+      } else if (pathname.startsWith('/api/statistics')) {
+        handled = await handleStatistics(req, res);
+      }
+      
+      if (!handled && !res.headersSent) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'API endpoint not found' }));
       }
+      
+      // Return after API handling to prevent further processing
+      return;
     }
     else if (pathname === '/categories' && method === 'GET') {
       res.setHeader('Content-Type', 'text/html');
@@ -158,7 +187,8 @@ const server = http.createServer(async (req, res) => {
       serveResourcesPage(req, res);
       return;
     } else if (pathname.startsWith('/resources')) {
-      if (await handleResources(req, res)) return;
+      const handled = await handleResources(req, res);
+      if (handled) return;
     }
     else if (pathname === '/users' && method === 'GET') {
       serveUsersPage(req, res);
@@ -170,6 +200,10 @@ const server = http.createServer(async (req, res) => {
       serveNotificationsPage(req, res);
       return;
     } else if (pathname.startsWith('/notifications')) {
+    }
+    else if (pathname === '/statistics' && method === 'GET') {
+      serveStatisticsPage(req, res);
+      return;
     }
     
     if (!res.headersSent) {
@@ -191,7 +225,7 @@ server.listen(port, () => {
 });
 
 process.on('SIGINT', async () => {
-  console.log('\\nShutting down server...');
+  console.log('\nShutting down server...');
   await pool.end();
   console.log('PostgreSQL pool has ended');
   server.close(() => {

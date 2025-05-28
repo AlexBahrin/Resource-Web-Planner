@@ -12,6 +12,7 @@ const categoriesHtml = readHtmlFile('categories.html');
 const resourcesHtml = readHtmlFile('resources.html');
 const usersHtml = readHtmlFile('users.html');
 const notificationsHtml = readHtmlFile('notifications.html');
+const statisticsHtml = readHtmlFile('statistics.html');
 
 const dashboardPage = (username = '') => {
   if (!username) return dashboardHtml;
@@ -30,5 +31,6 @@ module.exports = {
   categoriesPage,
   resourcesHtml,
   usersHtml,
-  notificationsHtml
+  notificationsHtml,
+  statisticsHtml
 };

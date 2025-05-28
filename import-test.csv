@@ -1,0 +1,2 @@
+name,category_id,quantity,description,low_stock_threshold
+Test CSV Import,1,15,"Imported via CSV test",3

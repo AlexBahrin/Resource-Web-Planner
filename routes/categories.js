@@ -2,7 +2,7 @@ const pool = require('../config/dbConfig.js');
 const { authenticateToken } = require('./auth');
 const { URL } = require('url');
 
-// Helper function to parse JSON request body
+
 function parseJsonBody(req, callback) {
     let body = '';
     req.on('data', chunk => {
@@ -17,8 +17,7 @@ function parseJsonBody(req, callback) {
                 const parsed = JSON.parse(body);
                 callback(null, parsed);
             } else {
-                callback(null, {}); // No body, return empty object
-            }
+                callback(null, {});            }
         } catch (e) {
             callback(e, null);
         }
@@ -42,7 +41,6 @@ async function handleCategories(req, res) {
             console.error('Error fetching groups:', err.message);
             if (!res.headersSent) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Error fetching groups', error: err.message }));
             }
         }
     } else if (pathname === '/api/groups' && req.method === 'POST') {
@@ -274,7 +272,6 @@ async function handleCategories(req, res) {
                 } catch (dbErr) {
                     console.error('Error deleting category:', dbErr.message);
                     if (!res.headersSent) {
-                        // Check for foreign key constraint violation if categories are linked elsewhere
                         if (dbErr.code === '23503') { 
                             res.writeHead(409, { 'Content-Type': 'application/json' });
                             res.end(JSON.stringify({ message: 'Cannot delete category as it is referenced by other resources.', error: dbErr.detail }));

@@ -4,9 +4,8 @@ const { parseJsonBody } = require('../util/requestUtils');
 async function handleUsers(req, res) {
   const path = req.path;
   const method = req.method;
-  const userId = req.userId; // Assuming userId is populated by authentication middleware
+  const userId = req.userId; 
 
-  // GET current user's details (including group_id)
   if (path === '/api/users/me' && method === 'GET') {
     if (!userId) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -30,7 +29,6 @@ async function handleUsers(req, res) {
     return true;
   }
 
-  // PUT to join a group
   if (path === '/api/users/me/join-group' && method === 'PUT') {
     if (!userId) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -44,7 +42,6 @@ async function handleUsers(req, res) {
       return true;
     }
     try {
-      // Check if group exists
       const groupExists = await pool.query('SELECT id FROM groups WHERE id = $1', [data.groupId]);
       if (groupExists.rows.length === 0) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -70,7 +67,6 @@ async function handleUsers(req, res) {
     return true;
   }
 
-  // PUT to exit a group
   if (path === '/api/users/me/exit-group' && method === 'PUT') {
     if (!userId) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -97,12 +93,7 @@ async function handleUsers(req, res) {
     return true;
   }
   
-  // POST to create a new user (registration)
-  // if (path === '/users' && method === 'POST') { // This is likely handled by auth.js for /register
-  // For this example, assuming this is a separate admin user creation or similar
-  // Make sure this path doesn't conflict with your existing /register in auth.js
-  // Or, if this is the main registration, ensure password hashing and other security measures are in place.
-  if (path === '/api/users/register' && method === 'POST') { // Changed path to avoid conflict
+  if (path === '/api/users/register' && method === 'POST') { 
     parseJsonBody(req, res, async data => {
       const { username, email, password } = data; 
       if (!username || !email || !password) {
@@ -110,7 +101,7 @@ async function handleUsers(req, res) {
         res.end(JSON.stringify({ error: 'Username, email, and password are required.' }));
         return;
       }
-      const password_hash = password; // In a real app, hash the password!
+      const password_hash = password; 
       try {
         const result = await pool.query(
           'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, created_at',
@@ -132,9 +123,7 @@ async function handleUsers(req, res) {
     return true;
   }
   
-  // GET all users (admin functionality, if needed)
   if (path === '/api/users' && method === 'GET') {
-    // Add authentication/authorization checks if this is sensitive
     try {
         const result = await pool.query('SELECT id, username, email, role, group_id FROM users ORDER BY id ASC');
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -147,9 +136,7 @@ async function handleUsers(req, res) {
     return true;
   }
   
-  // GET a specific user by ID (admin functionality, if needed)
-  if (path.startsWith('/api/users/') && method === 'GET' && path !== '/api/users/me' && !path.endsWith('/register')) { // Added check to avoid conflict with /api/users/register
-    // Add authentication/authorization checks
+  if (path.startsWith('/api/users/') && method === 'GET' && path !== '/api/users/me' && !path.endsWith('/register')) {
     const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -173,7 +160,7 @@ async function handleUsers(req, res) {
     return true;
   }
   
-  return false; // If no route was matched by this handler
+  return false;
 }
 
 module.exports = { handleUsers };

@@ -3,14 +3,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const groupStatusTextElement = document.getElementById('group-status-text');
   const groupActionsContainer = document.getElementById('group-actions-container');
 
-  // Function to fetch current user's details (including group_id)
   async function fetchCurrentUser() {
     try {
-      const response = await fetch('/api/users/me'); // Endpoint to get current user's data
+      const response = await fetch('/api/users/me');
       if (!response.ok) {
-        if (response.status === 401) { // Handle not logged in
+        if (response.status === 401) {
           console.warn('User not authenticated. Redirecting to login.');
-          // window.location.href = '/login.html'; // Optional: redirect
           const userDetailsContainer = document.getElementById('user-details-container');
           if (userDetailsContainer) userDetailsContainer.innerHTML = '<p>Please log in to see your details and manage groups.</p>';
           const groupStatusContainer = document.getElementById('group-status-container');
@@ -31,10 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Function to fetch all available groups
   async function fetchAllGroups() {
     try {
-      const response = await fetch('/api/groups'); // Endpoint to get all groups
+      const response = await fetch('/api/groups');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -45,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Function to display user details
   function displayUserDetails(user) {
     const userDetailsContainer = document.getElementById('user-details-container');
     if (userDetailsContainer) {
@@ -58,7 +54,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Function to update UI based on user and group status
   function updateGroupUI(user) {
     const groupStatusContainer = document.getElementById('group-status-container');
     const groupActionsContainer = document.getElementById('group-actions-container');
@@ -68,7 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    // Clear previous content
     groupStatusContainer.innerHTML = '';
     groupActionsContainer.innerHTML = '';
 
@@ -78,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const exitButton = document.createElement('button');
       exitButton.textContent = 'Exit Group';
       exitButton.id = 'exit-group-btn';
-      exitButton.className = 'action-button'; // Add a class for styling if needed
+      exitButton.className = 'action-button';
       exitButton.addEventListener('click', handleExitGroup);
       groupActionsContainer.appendChild(exitButton);
     } else {
@@ -100,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Event Handlers
   async function handleCreateGroup() {
     const groupName = prompt('Enter the name for the new group:');
     if (!groupName || groupName.trim() === '') {
@@ -120,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       const newGroup = await response.json();
       alert(`Group "${newGroup.name}" (ID: ${newGroup.id}) created successfully! You can now join this group using its ID.`);
-      fetchCurrentUser(); // Refresh user data and UI
+      fetchCurrentUser();
     } catch (error) {
       console.error('Failed to create group:', error);
       alert(`Error creating group: ${error.message}`);
@@ -144,10 +137,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const errorData = await response.json().catch(() => ({ message: 'Failed to join group. Ensure the Group ID is correct and the group exists.' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      // Assuming the response for successful join might be minimal or just a success status
-      await response.json(); // Or handle based on actual API response
+      await response.json();
       alert('Successfully joined group!');
-      fetchCurrentUser(); // Refresh user data and UI
+      fetchCurrentUser();
     } catch (error) {
       console.error('Failed to join group:', error);
       alert(`Error joining group: ${error.message}`);
@@ -168,16 +160,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const errorData = await response.json().catch(() => ({ message: 'Failed to exit group. Please try again.' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      // Assuming the response for successful exit might be minimal
-      await response.json(); // Or handle based on actual API response
+      await response.json();
       alert('Successfully exited group.');
-      fetchCurrentUser(); // Refresh user data and UI
+      fetchCurrentUser();
     } catch (error) {
       console.error('Failed to exit group:', error);
       alert(`Error exiting group: ${error.message}`);
     }
   }
 
-  // Initial load
   fetchCurrentUser();
 });

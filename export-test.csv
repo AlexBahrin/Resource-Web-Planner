@@ -1,0 +1,19 @@
+id,name,category_id,category_name,quantity,description,low_stock_threshold
+4,a,1,aa,2,,0
+5,Test CSV Import,1,aa,15,Imported via CSV test,3
+6,Test XML Import,1,aa,20,Imported via XML test,5
+7,Test CSV Import,1,aa,15,Imported via CSV test,3
+8,Test XML Import,1,aa,20,Imported via XML test,5
+9,Test CSV Import,1,aa,15,Imported via CSV test,3
+10,Test XML Import,1,aa,20,Imported via XML test,5
+11,Test CSV Import,1,aa,15,Imported via CSV test,3
+12,Test XML Import,1,aa,20,Imported via XML test,5
+13,Test JSON Import,1,aa,10,Imported via JSON test,2
+14,Test JSON Import,1,aa,10,Imported via JSON test,2
+15,Test CSV Import,1,aa,15,Imported via CSV test,3
+16,Test XML Import,1,aa,20,Imported via XML test,5
+17,Test CSV Import,1,aa,15,Imported via CSV test,3
+18,Test XML Import,1,aa,20,Imported via XML test,5
+19,Test CSV Import,1,aa,15,Imported via CSV test,3
+20,Test XML Import,1,aa,20,Imported via XML test,5
+21,Test JSON Import,1,aa,10,Imported via JSON test,2

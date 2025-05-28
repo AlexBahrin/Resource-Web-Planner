@@ -25,8 +25,13 @@ function serveNotificationsPage(req, res) {
   return serveHTML(req, res, templates.notificationsHtml);
 }
 
+function serveStatisticsPage(req, res) {
+  return serveHTML(req, res, templates.statisticsHtml);
+}
+
 module.exports = {
   serveResourcesPage,
   serveUsersPage,
-  serveNotificationsPage
+  serveNotificationsPage,
+  serveStatisticsPage
 };
