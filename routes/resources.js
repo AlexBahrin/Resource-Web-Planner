@@ -5,45 +5,89 @@ const { parseJsonBody } = require('../util/requestUtils');
 async function handleResources(req, res) {
   const path = req.path;
   const method = req.method;
-  
-  // Create a resource
-  if (path === '/resources' && method === 'POST') {
-    parseJsonBody(req, res, async data => {
-      const { name, category_id, quantity, description, low_stock_threshold } = data;
-      if (!name || category_id === undefined) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Resource name and category_id are required.' }));
-        return;
-      }
-      try {
-        const result = await pool.query(
-          'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [name, category_id, quantity, description, low_stock_threshold]
-        );
-        const newResource = result.rows[0];
 
-        if (quantity !== undefined && low_stock_threshold !== undefined && quantity < low_stock_threshold) {
-          await pool.query(
-            'INSERT INTO notifications (message, resource_id, type) VALUES ($1, $2, $3)',
-            [`Warning: Resource "${name}" is low in stock (${quantity} remaining).`, newResource.id, 'low_stock']
-          );
-        }
-        res.writeHead(201);
-        res.end(JSON.stringify(newResource));
-      } catch (dbErr) {
-        console.error('DB Error on POST /resources:', dbErr);
-        res.writeHead(500);
-        res.end(JSON.stringify({ error: 'Database error', details: dbErr.message }));
+  // Create a resource - Adjusted to /api/resources
+  if (path === '/api/resources' && method === 'POST') {
+    const data = await parseJsonBody(req, res);
+
+    // If data is null, parseJsonBody already handled the error response
+    if (data === null) {
+      return true; // Indicate request was handled (or attempted to be)
+    }
+
+    console.log('POST /api/resources - Received data:', data);
+    const { name, category_id, quantity, description, low_stock_threshold } = data;
+
+    // Enhanced Input Validation
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Resource name is required and must be a non-empty string.' }));
+      return;
+    }
+    // Ensure category_id is a positive integer
+    const parsedCategoryId = parseInt(category_id, 10);
+    if (isNaN(parsedCategoryId) || parsedCategoryId <= 0) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'A valid Category ID is required.' }));
+      return;
+    }
+    
+    const parsedQuantity = quantity !== undefined ? parseInt(quantity, 10) : 0;
+    if (isNaN(parsedQuantity) || parsedQuantity < 0) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Quantity must be a non-negative number.' }));
+      return;
+    }
+
+    const parsedLowStockThreshold = low_stock_threshold !== undefined ? parseInt(low_stock_threshold, 10) : 0;
+    if (isNaN(parsedLowStockThreshold) || parsedLowStockThreshold < 0) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Low stock threshold must be a non-negative number.' }));
+      return;
+    }
+
+    try {
+      const result = await pool.query(
+        'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold]
+      );
+      const newResource = result.rows[0];
+      console.log('POST /api/resources - Resource created:', newResource);
+
+      // Check for low stock notification
+      if (newResource.quantity < newResource.low_stock_threshold) {
+        await pool.query(
+          'INSERT INTO notifications (message, resource_id, type) VALUES ($1, $2, $3)',
+          [`Warning: Resource "${newResource.name}" is low in stock (${newResource.quantity} remaining).`, newResource.id, 'low_stock']
+        );
       }
-    });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(newResource));
+    } catch (dbErr) {
+      console.error('DB Error on POST /api/resources:', dbErr.stack);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Database error while creating resource.', details: dbErr.message }));
+    }
     return true;
   }
-  
+
   // List all resources as JSON API
   if (path === '/api/resources' && method === 'GET') {
-    const result = await pool.query('SELECT * FROM resources ORDER BY id ASC');
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(result.rows));
+    try {
+      const query = `
+        SELECT r.id, r.name, r.category_id, c.name AS category_name, r.quantity, r.description, r.low_stock_threshold 
+        FROM resources r
+        LEFT JOIN categories c ON r.category_id = c.id
+        ORDER BY r.id ASC
+      `;
+      const result = await pool.query(query);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows));
+    } catch (dbErr) {
+      console.error('DB Error on GET /api/resources:', dbErr.stack);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Database error while fetching resources.', details: dbErr.message }));
+    }
     return true;
   }
 
@@ -60,9 +104,9 @@ async function handleResources(req, res) {
   }
   */
   
-  // Get a single resource
-  if (path.startsWith('/resources/') && method === 'GET') {
-    const id = parseInt(path.split('/')[2]);
+  // Get a single resource - Adjusted to /api/resources/:id
+  if (path.startsWith('/api/resources/') && method === 'GET' && path.split('/').length === 4) { // Ensure it's /api/resources/:id
+    const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
       res.writeHead(400);
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
@@ -79,59 +123,64 @@ async function handleResources(req, res) {
     return true;
   }
   
-  // Update a resource
-  if (path.startsWith('/resources/') && method === 'PUT') {
-    const id = parseInt(path.split('/')[2]);
+  // Update a resource - Adjusted to /api/resources/:id
+  if (path.startsWith('/api/resources/') && method === 'PUT' && path.split('/').length === 4) { // Ensure it's /api/resources/:id
+    const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
       res.writeHead(400);
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
       return true;
     }
-    parseJsonBody(req, res, async data => {
-      const { name, category_id, quantity, description, low_stock_threshold } = data;
-      const currentResourceResult = await pool.query('SELECT quantity, low_stock_threshold, name FROM resources WHERE id = $1', [id]);
-      if (currentResourceResult.rows.length === 0) {
-        res.writeHead(404);
-        res.end(JSON.stringify({ error: 'Resource not found to update.' }));
-        return;
+    const data = await parseJsonBody(req, res);
+
+    // If data is null, parseJsonBody already handled the error response
+    if (data === null) {
+      return true; // Indicate request was handled (or attempted to be)
+    }
+
+    const { name, category_id, quantity, description, low_stock_threshold } = data;
+    const currentResourceResult = await pool.query('SELECT quantity, low_stock_threshold, name FROM resources WHERE id = $1', [id]);
+    if (currentResourceResult.rows.length === 0) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Resource not found to update.' }));
+      return;
+    }
+    const originalResource = currentResourceResult.rows[0];
+
+    const q = 'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5 WHERE id = $6 RETURNING *';
+    const result = await pool.query(q, [
+      name || originalResource.name,
+      category_id || originalResource.category_id,
+      quantity === undefined ? originalResource.quantity : quantity,
+      description || originalResource.description,
+      low_stock_threshold === undefined ? originalResource.low_stock_threshold : low_stock_threshold,
+      id
+    ]);
+
+    if (result.rows.length === 0) {
+      res.writeHead(404); 
+      res.end(JSON.stringify({ error: 'Resource not found after update attempt.' }));
+    } else {
+      const updatedResource = result.rows[0];
+      const oldQty = originalResource.quantity;
+      const newQty = updatedResource.quantity;
+      const threshold = updatedResource.low_stock_threshold;
+
+      if (newQty < threshold && (oldQty === undefined || oldQty >= threshold)) {
+         await pool.query(
+          'INSERT INTO notifications (message, resource_id, type) VALUES ($1, $2, $3)',
+          [`Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`, updatedResource.id, 'low_stock']
+        );
       }
-      const originalResource = currentResourceResult.rows[0];
-
-      const q = 'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5 WHERE id = $6 RETURNING *';
-      const result = await pool.query(q, [
-        name || originalResource.name,
-        category_id || originalResource.category_id,
-        quantity === undefined ? originalResource.quantity : quantity,
-        description || originalResource.description,
-        low_stock_threshold === undefined ? originalResource.low_stock_threshold : low_stock_threshold,
-        id
-      ]);
-
-      if (result.rows.length === 0) {
-        res.writeHead(404); 
-        res.end(JSON.stringify({ error: 'Resource not found after update attempt.' }));
-      } else {
-        const updatedResource = result.rows[0];
-        const oldQty = originalResource.quantity;
-        const newQty = updatedResource.quantity;
-        const threshold = updatedResource.low_stock_threshold;
-
-        if (newQty < threshold && (oldQty === undefined || oldQty >= threshold)) {
-           await pool.query(
-            'INSERT INTO notifications (message, resource_id, type) VALUES ($1, $2, $3)',
-            [`Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`, updatedResource.id, 'low_stock']
-          );
-        }
-        res.writeHead(200);
-        res.end(JSON.stringify(updatedResource));
-      }
-    });
+      res.writeHead(200);
+      res.end(JSON.stringify(updatedResource));
+    }
     return true;
   }
   
-  // Delete a resource
-  if (path.startsWith('/resources/') && method === 'DELETE') {
-    const id = parseInt(path.split('/')[2]);
+  // Delete a resource - Adjusted to /api/resources/:id
+  if (path.startsWith('/api/resources/') && method === 'DELETE' && path.split('/').length === 4) { // Ensure it's /api/resources/:id
+    const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
       res.writeHead(400);
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));

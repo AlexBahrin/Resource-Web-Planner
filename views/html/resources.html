@@ -3,7 +3,6 @@
 <head>
   <title>Resources</title>
   <link rel="stylesheet" href="/css/styles.css">
-  <script src="/js/resources.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
@@ -12,7 +11,36 @@
     <div id="resources-list">
       <!-- Resources will be inserted here dynamically -->
     </div>
+
+    <h3>Add New Resource</h3>
+    <form id="add-resource-form" class="add-form">
+      <div class="form-group">
+        <label for="resource-name">Resource Name:</label>
+        <input type="text" id="resource-name" name="resourceName" required>
+      </div>
+      <div class="form-group">
+        <label for="resource-category">Category:</label>
+        <select id="resource-category" name="resourceCategory" required>
+          <option value="">Loading categories...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="resource-quantity">Quantity:</label>
+        <input type="number" id="resource-quantity" name="resourceQuantity" value="0">
+      </div>
+      <div class="form-group">
+        <label for="resource-description">Description:</label>
+        <textarea id="resource-description" name="resourceDescription"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="low-stock-threshold">Low Stock Threshold:</label>
+        <input type="number" id="low-stock-threshold" name="lowStockThreshold" value="0">
+      </div>
+      <button type="submit" class="add-btn">Add Resource</button>
+    </form>
+
     <a class="back-link" href="/main">Back to Dashboard</a>
   </div>
+  <script src="/js/resources.js"></script>
 </body>
 </html>

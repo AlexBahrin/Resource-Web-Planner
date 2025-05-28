@@ -160,6 +160,71 @@ li:hover {
 .add-form button.add-btn {
     /* The .add-btn class already provides most styling (green color, padding etc) */
     margin-bottom: 0; /* Aligns button bottom with input bottom if input has no margin-bottom from global */
+    align-self: flex-end; /* Aligns button to the end of the flex container if form-group is flex */
+}
+
+/* Styles for the "Add New Resource" form specifically */
+#add-resource-form {
+  display: flex;
+  flex-direction: column; /* Stack form elements vertically */
+  align-items: center; /* Center children (form-groups and button) horizontally */
+  gap: 15px; /* Space between form groups */
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  max-width: 600px; /* Set a max-width for the form */
+  margin-left: auto; /* Center the form block on the page */
+  margin-right: auto; /* Center the form block on the page */
+}
+
+#add-resource-form h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center; /* Already centered, but good to confirm */
+  color: #333;
+}
+
+#add-resource-form .form-group {
+  display: flex;
+  flex-direction: column; /* Stack label and input vertically */
+  align-items: center; /* Center label and input/select/textarea within the form-group */
+  gap: 5px; /* Space between label and input */
+  width: 100%; /* Make form-group take full width of the form */
+}
+
+#add-resource-form label {
+  font-weight: bold;
+  font-size: 0.9em;
+  color: #555;
+  text-align: center; /* Center the label text */
+}
+
+#add-resource-form input[type="text"],
+#add-resource-form input[type="number"],
+#add-resource-form select,
+#add-resource-form textarea {
+  width: 80%; /* Adjust width as needed, less than 100% to see centering */
+  max-width: 400px; /* Optional: set a max-width for inputs */
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  font-size: 1rem;
+  text-align: center; /* Center the text within the input fields */
+}
+
+#add-resource-form textarea {
+  resize: vertical; /* Allow vertical resizing, disable horizontal */
+  min-height: 80px;
+}
+
+#add-resource-form button.add-btn {
+  margin-top: 10px; /* Add some space above the button */
+  width: auto; /* Allow button to size based on content */
+  /* align-self: center; /* Already centered by #add-resource-form's align-items: center */
+  padding: 10px 20px;
 }
 
 
