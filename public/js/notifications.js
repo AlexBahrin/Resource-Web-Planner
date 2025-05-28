@@ -1,6 +1,4 @@
-// Client-side JavaScript for notifications page
 document.addEventListener('DOMContentLoaded', function() {
-  // Fetch notifications data
   fetch('/api/notifications')
     .then(response => response.json())
     .then(notifications => {
@@ -24,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
       html += '</ul>';
       notificationsList.innerHTML = html;
       
-      // Add event listeners to "Mark as Read" buttons
       document.querySelectorAll('.mark-read-btn').forEach(button => {
         button.addEventListener('click', function() {
           const notificationId = this.getAttribute('data-id');
@@ -37,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('notifications-list').innerHTML = '<p>Error loading notifications.</p>';
     });
     
-  // Function to mark notification as read
   function markNotificationAsRead(id, listItem) {
     fetch(`/api/notifications/${id}`, {
       method: 'PUT',
@@ -49,7 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (response.ok) {
         listItem.remove();
         
-        // Check if there are any notifications left
         if (document.querySelectorAll('.notification-item').length === 0) {
           document.getElementById('notifications-list').innerHTML = '<p>No new notifications.</p>';
         }

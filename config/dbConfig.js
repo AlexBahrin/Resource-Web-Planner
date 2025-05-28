@@ -1,5 +1,3 @@
-// Database configuration for the application
-
 const { Pool } = require('pg');
 
 const dbConfig = {

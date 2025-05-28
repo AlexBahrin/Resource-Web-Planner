@@ -1,4 +1,3 @@
-// Client-side JavaScript for resources page
 document.addEventListener('DOMContentLoaded', function() {
   const resourcesList = document.getElementById('resources-list');
   const addResourceForm = document.getElementById('add-resource-form');
@@ -7,11 +6,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const resourceQuantityInput = document.getElementById('resource-quantity');
   const resourceDescriptionInput = document.getElementById('resource-description');
   const lowStockThresholdInput = document.getElementById('low-stock-threshold');
-  const editResourceIdInput = document.getElementById('edit-resource-id'); // Get the hidden input
-  const formSubmitButton = addResourceForm.querySelector('button[type="submit"]'); // Get the submit button
-  const cancelEditBtn = document.getElementById('cancel-edit-btn'); // Get the cancel button
+  const editResourceIdInput = document.getElementById('edit-resource-id');
+  const formSubmitButton = addResourceForm.querySelector('button[type="submit"]');
+  const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
-  // Refactor initial resource fetch to a function to be reusable
   function fetchResources() {
     fetch('/api/resources')
       .then(response => {
@@ -27,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         let html = '<table class="data-table">';
-        html += '<thead><tr><th>Name</th><th>Category</th><th>Quantity</th><th>Description</th><th>Low Stock Threshold</th><th>Actions</th></tr></thead>'; // Added Actions header
+        html += '<thead><tr><th>Name</th><th>Category</th><th>Quantity</th><th>Description</th><th>Low Stock Threshold</th><th>Actions</th></tr></thead>';
         html += '<tbody>';
         resources.forEach(resource => {
           const categoryDisplay = resource.category_id 
@@ -48,11 +46,9 @@ document.addEventListener('DOMContentLoaded', function() {
         html += '</tbody></table>';
         resourcesList.innerHTML = html;
 
-        // Add event listeners for new edit and delete buttons
         document.querySelectorAll('.edit-btn').forEach(button => {
           button.addEventListener('click', (event) => {
             const resourceId = event.target.dataset.id;
-            // Find the resource data from the fetched resources array
             const resourceToEdit = resources.find(r => r.id.toString() === resourceId);
             if (resourceToEdit) {
               populateFormForEdit(resourceToEdit);
@@ -75,7 +71,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
-  // Fetch categories for the dropdown
   async function fetchCategoriesForDropdown() {
     try {
       const response = await fetch('/api/categories');
@@ -83,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const categories = await response.json();
-      resourceCategorySelect.innerHTML = '<option value="">Select a category</option>'; // Placeholder
+      resourceCategorySelect.innerHTML = '<option value="">Select a category</option>';
       categories.forEach(category => {
         const option = document.createElement('option');
         option.value = category.id;
@@ -96,15 +91,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Function to handle adding or updating a new resource
-  async function addOrUpdateResource(event) { // Renamed from addResource
+  async function addOrUpdateResource(event) {
     event.preventDefault();
     const resourceName = resourceNameInput.value.trim();
     const categoryId = resourceCategorySelect.value;
     const quantity = parseInt(resourceQuantityInput.value, 10);
     const description = resourceDescriptionInput.value.trim();
     const lowStockThreshold = parseInt(lowStockThresholdInput.value, 10);
-    const resourceId = editResourceIdInput.value; // Get the ID for editing
+    const resourceId = editResourceIdInput.value;
 
     if (!resourceName || !categoryId) {
       alert('Resource name and category are required.');
@@ -142,20 +136,18 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!response.ok) {
         let errorData = { message: `Request failed with status: ${response.status} ${response.statusText}` };
         try {
-          // Attempt to parse detailed error message from server
           const serverError = await response.json();
           errorData.message = serverError.error || serverError.message || errorData.message;
         } catch (e) {
-          // If server didn't send JSON or it's malformed, stick with the status text or generic message
           console.warn('Could not parse error response as JSON:', e);
         }
         throw new Error(errorData.message);
       }
 
-      const newResource = await response.json(); // Ensure we parse the successful JSON response
-      console.log('Resource added/updated:', newResource); // Log the newly added/updated resource
+      const newResource = await response.json();
+      console.log('Resource added/updated:', newResource);
 
-      resetForm(); // Reset form and button text
+      resetForm();
       fetchResources(); 
       alert(`Resource ${resourceId ? 'updated' : 'added'} successfully!`);
     } catch (error) {
@@ -164,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Function to populate form for editing
   function populateFormForEdit(resource) {
     editResourceIdInput.value = resource.id;
     resourceNameInput.value = resource.name;
@@ -173,20 +164,18 @@ document.addEventListener('DOMContentLoaded', function() {
     resourceDescriptionInput.value = resource.description || '';
     lowStockThresholdInput.value = resource.low_stock_threshold === null || resource.low_stock_threshold === undefined ? '' : resource.low_stock_threshold;
     formSubmitButton.textContent = 'Update Resource';
-    cancelEditBtn.style.display = 'inline-block'; // Show cancel button
-    window.scrollTo({ top: addResourceForm.offsetTop - 20, behavior: 'smooth' }); // Scroll to form
+    cancelEditBtn.style.display = 'inline-block';
+    window.scrollTo({ top: addResourceForm.offsetTop - 20, behavior: 'smooth' });
   }
 
-  // Function to reset the form
   function resetForm() {
     addResourceForm.reset();
-    editResourceIdInput.value = ''; // Clear the hidden ID field
-    resourceCategorySelect.value = ''; // Reset select to placeholder
-    formSubmitButton.textContent = 'Add Resource'; // Reset button text
-    cancelEditBtn.style.display = 'none'; // Hide cancel button
+    editResourceIdInput.value = '';
+    resourceCategorySelect.value = '';
+    formSubmitButton.textContent = 'Add Resource';
+    cancelEditBtn.style.display = 'none';
   }
 
-  // Function to handle deleting a resource
   async function handleDeleteResource(resourceId, resourceName) {
     if (!confirm(`Are you sure you want to delete the resource "${resourceName}" (ID: ${resourceId})?`)) {
       return;
@@ -197,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       if (!response.ok) {
         let errorData = { message: `Request failed with status: ${response.status} ${response.statusText}` };
-        if (response.status !== 204) { // 204 No Content might not have a JSON body
+        if (response.status !== 204) {
             try {
                 const serverError = await response.json();
                 errorData.message = serverError.error || serverError.message || errorData.message;
@@ -208,28 +197,23 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error(errorData.message);
       }
       alert('Resource deleted successfully!');
-      fetchResources(); // Refresh the list
+      fetchResources();
     } catch (error) {
       console.error('Error deleting resource:', error.message, error.stack);
       alert(`Error deleting resource: ${error.message}`);
     }
   }
 
-  // Add event listener for the form submission
   if (addResourceForm) {
-    addResourceForm.addEventListener('submit', addOrUpdateResource); // Changed to addOrUpdateResource
+    addResourceForm.addEventListener('submit', addOrUpdateResource);
   }
 
-  // Add event listener for the cancel button
   if (cancelEditBtn) {
     cancelEditBtn.addEventListener('click', function() {
       resetForm();
     });
   }
 
-  // Initial fetch of categories for the dropdown
   fetchCategoriesForDropdown();
-
-  // Initial fetch of resources
   fetchResources();
 });

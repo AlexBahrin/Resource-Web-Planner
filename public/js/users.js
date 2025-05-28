@@ -1,6 +1,4 @@
-// Client-side JavaScript for users page
 document.addEventListener('DOMContentLoaded', function() {
-  // Fetch users data
   fetch('/api/users')
     .then(response => response.json())
     .then(users => {

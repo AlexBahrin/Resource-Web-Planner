@@ -1,6 +1,5 @@
 const templates = require('../views/templates');
 
-// Function to serve HTML pages for resources, users and notifications
 function serveHTML(req, res, page) {
   const path = req.path;
   const method = req.method;

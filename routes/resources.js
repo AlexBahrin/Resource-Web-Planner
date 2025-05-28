@@ -1,64 +1,65 @@
-// Resources routes
 const pool = require('../config/dbConfig');
 const { parseJsonBody } = require('../util/requestUtils');
 
 async function handleResources(req, res) {
   const path = req.path;
   const method = req.method;
+  const userId = req.userId; 
 
-  // Create a resource - Adjusted to /api/resources
   if (path === '/api/resources' && method === 'POST') {
     const data = await parseJsonBody(req, res);
 
-    // If data is null, parseJsonBody already handled the error response
     if (data === null) {
-      return true; // Indicate request was handled (or attempted to be)
+      return true;
     }
 
     console.log('POST /api/resources - Received data:', data);
-    const { name, category_id, quantity, description, low_stock_threshold } = data;
+    const { name, category_id, quantity, description, low_stock_threshold } = data; 
 
-    // Enhanced Input Validation
+    if (!userId) { 
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not authenticated.' }));
+        return true;
+    }
+
     if (!name || typeof name !== 'string' || name.trim() === '') {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Resource name is required and must be a non-empty string.' }));
-      return;
+      return true; 
     }
-    // Ensure category_id is a positive integer
     const parsedCategoryId = parseInt(category_id, 10);
     if (isNaN(parsedCategoryId) || parsedCategoryId <= 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'A valid Category ID is required.' }));
-      return;
+      return true; 
     }
     
     const parsedQuantity = quantity !== undefined ? parseInt(quantity, 10) : 0;
     if (isNaN(parsedQuantity) || parsedQuantity < 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Quantity must be a non-negative number.' }));
-      return;
+      return true; 
     }
 
     const parsedLowStockThreshold = low_stock_threshold !== undefined ? parseInt(low_stock_threshold, 10) : 0;
     if (isNaN(parsedLowStockThreshold) || parsedLowStockThreshold < 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Low stock threshold must be a non-negative number.' }));
-      return;
+      return true; 
     }
 
     try {
       const result = await pool.query(
-        'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold]
+        'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold, userId]
       );
       const newResource = result.rows[0];
       console.log('POST /api/resources - Resource created:', newResource);
 
-      // Check for low stock notification
       if (newResource.quantity < newResource.low_stock_threshold) {
         await pool.query(
-          'INSERT INTO notifications (message, resource_id, type) VALUES ($1, $2, $3)',
-          [`Warning: Resource "${newResource.name}" is low in stock (${newResource.quantity} remaining).`, newResource.id, 'low_stock']
+          'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
+          [`Warning: Resource "${newResource.name}" is low in stock (${newResource.quantity} remaining).`, newResource.id, 'low_stock', userId]
         );
       }
       res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -71,15 +72,14 @@ async function handleResources(req, res) {
     return true;
   }
 
-  // List all resources as JSON API
   if (path === '/api/resources' && method === 'GET') {
     try {
       const query = `
-        SELECT r.id, r.name, r.category_id, c.name AS category_name, r.quantity, r.description, r.low_stock_threshold 
+        SELECT r.id, r.name, r.category_id, c.name AS category_name, r.quantity, r.description, r.low_stock_threshold, r.user_id 
         FROM resources r
         LEFT JOIN categories c ON r.category_id = c.id
         ORDER BY r.id ASC
-      `;
+      `; 
       const result = await pool.query(query);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result.rows));
@@ -91,75 +91,73 @@ async function handleResources(req, res) {
     return true;
   }
 
-  // List all resources (this was the original /resources GET handler, now effectively for HTML via serveResourcesPage)
-  // if (path === '/resources' && method === 'GET') { ... }
-  // This block can be removed or commented out if serveResourcesPage in index.js handles HTML serving.
-  // For clarity, I will comment it out, assuming index.js handles the HTML page for /resources.
-  /*
-  if (path === '/resources' && method === 'GET') {
-    const result = await pool.query('SELECT * FROM resources ORDER BY id ASC');
-    res.writeHead(200);
-    res.end(JSON.stringify(result.rows));
-    return true;
-  }
-  */
-  
-  // Get a single resource - Adjusted to /api/resources/:id
-  if (path.startsWith('/api/resources/') && method === 'GET' && path.split('/').length === 4) { // Ensure it's /api/resources/:id
+  if (path.startsWith('/api/resources/') && method === 'GET' && path.split('/').length === 4) {
     const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
-      res.writeHead(400);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
       return true;
     }
+    
     const result = await pool.query('SELECT * FROM resources WHERE id = $1', [id]);
     if (result.rows.length === 0) {
-      res.writeHead(404);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Resource not found.' }));
     } else {
-      res.writeHead(200);
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result.rows[0]));
     }
     return true;
   }
   
-  // Update a resource - Adjusted to /api/resources/:id
-  if (path.startsWith('/api/resources/') && method === 'PUT' && path.split('/').length === 4) { // Ensure it's /api/resources/:id
+  if (path.startsWith('/api/resources/') && method === 'PUT' && path.split('/').length === 4) {
     const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
-      res.writeHead(400);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
       return true;
     }
     const data = await parseJsonBody(req, res);
 
-    // If data is null, parseJsonBody already handled the error response
     if (data === null) {
-      return true; // Indicate request was handled (or attempted to be)
+      return true;
+    }
+    if (!userId) { 
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not authenticated for PUT operation.' }));
+        return true;
     }
 
     const { name, category_id, quantity, description, low_stock_threshold } = data;
-    const currentResourceResult = await pool.query('SELECT quantity, low_stock_threshold, name FROM resources WHERE id = $1', [id]);
+    const currentResourceResult = await pool.query('SELECT quantity, low_stock_threshold, name, user_id FROM resources WHERE id = $1', [id]);
     if (currentResourceResult.rows.length === 0) {
-      res.writeHead(404);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Resource not found to update.' }));
-      return;
+      return true;
     }
     const originalResource = currentResourceResult.rows[0];
 
-    const q = 'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5 WHERE id = $6 RETURNING *';
+    if (originalResource.user_id !== userId) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Forbidden: You do not own this resource.' }));
+        return true;
+    }
+
+    const q = 'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5 WHERE id = $6 AND user_id = $7 RETURNING *';
     const result = await pool.query(q, [
       name || originalResource.name,
       category_id || originalResource.category_id,
       quantity === undefined ? originalResource.quantity : quantity,
       description || originalResource.description,
       low_stock_threshold === undefined ? originalResource.low_stock_threshold : low_stock_threshold,
-      id
+      id,
+      userId
     ]);
 
     if (result.rows.length === 0) {
-      res.writeHead(404); 
-      res.end(JSON.stringify({ error: 'Resource not found after update attempt.' }));
+      res.writeHead(404, { 'Content-Type': 'application/json' }); 
+      res.end(JSON.stringify({ error: 'Resource not found or not authorized to update.' }));
     } else {
       const updatedResource = result.rows[0];
       const oldQty = originalResource.quantity;
@@ -168,36 +166,53 @@ async function handleResources(req, res) {
 
       if (newQty < threshold && (oldQty === undefined || oldQty >= threshold)) {
          await pool.query(
-          'INSERT INTO notifications (message, resource_id, type) VALUES ($1, $2, $3)',
-          [`Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`, updatedResource.id, 'low_stock']
+          'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
+          [`Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`, updatedResource.id, 'low_stock', userId]
         );
       }
-      res.writeHead(200);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(updatedResource));
     }
     return true;
   }
   
-  // Delete a resource - Adjusted to /api/resources/:id
-  if (path.startsWith('/api/resources/') && method === 'DELETE' && path.split('/').length === 4) { // Ensure it's /api/resources/:id
+  if (path.startsWith('/api/resources/') && method === 'DELETE' && path.split('/').length === 4) {
     const id = parseInt(path.split('/')[3]);
     if (isNaN(id)) {
-      res.writeHead(400);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
       return true;
     }
-    const result = await pool.query('DELETE FROM resources WHERE id = $1 RETURNING *', [id]);
+    if (!userId) { 
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not authenticated for DELETE operation.' }));
+        return true;
+    }
+
+    const resourceCheck = await pool.query('SELECT user_id FROM resources WHERE id = $1', [id]);
+    if (resourceCheck.rows.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Resource not found.' }));
+        return true;
+    }
+    if (resourceCheck.rows[0].user_id !== userId) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Forbidden: You do not own this resource.' }));
+        return true;
+    }
+
+    const result = await pool.query('DELETE FROM resources WHERE id = $1 AND user_id = $2 RETURNING *', [id, userId]);
     if (result.rowCount === 0) {
-      res.writeHead(404);
-      res.end(JSON.stringify({ error: 'Resource not found.' }));
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Resource not found or not authorized to delete.' }));
     } else {
-      res.writeHead(204);
+      res.writeHead(204, { 'Content-Type': 'application/json' }); 
       res.end();
     }
     return true;
   }
   
-  return false; // Not handled
+  return false;
 }
 
 module.exports = { handleResources };

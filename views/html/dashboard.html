@@ -4,10 +4,34 @@
   <title>Dashboard</title>
   <link rel="stylesheet" href="/css/styles.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { /* Ensure body allows for absolute positioning relative to viewport */
+      position: relative;
+      min-height: 100vh; /* Ensure body takes at least full viewport height */
+    }
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between; /* This will now only affect items inside if there were more than one */
+      align-items: center;
+      margin-bottom: 20px; 
+    }
+    .logout-form-page-corner { /* New class for page corner positioning */
+      position: absolute;
+      top: 10px; /* Adjust as needed */
+      right: 10px; /* Adjust as needed */
+      z-index: 1000; /* Ensure it's above other content */
+    }
+  </style>
 </head>
 <body>
+  <form method="POST" action="/logout" class="logout-form-page-corner">
+    <button type="submit" class="btn btn-danger">Logout</button>
+  </form>
+
   <div class="container">
-    <h2 id="welcome-message">Dashboard</h2>
+    <div class="dashboard-header">
+      <h2 id="welcome-message">Dashboard</h2>
+    </div>
     <div class="btn-group">
       <a href="/categories">Categories</a>
       <a href="/resources">Resources</a>

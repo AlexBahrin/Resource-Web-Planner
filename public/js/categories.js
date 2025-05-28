@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const formSubmitButton = addCategoryForm.querySelector('button[type="submit"]');
     const cancelEditBtn = document.getElementById('cancel-edit-category-btn');
 
-    // Function to fetch and display categories
     async function fetchCategories() {
         try {
             const response = await fetch('/api/categories');
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Function to render categories in a table
     function renderCategories(categories) {
         if (!categories || categories.length === 0) {
             categoriesListContainer.innerHTML = '<p>No categories found.</p>';
@@ -44,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         html += '</tbody></table>';
         categoriesListContainer.innerHTML = html;
 
-        // Add event listeners for new edit and delete buttons
         document.querySelectorAll('#categories-list-container .edit-btn').forEach(button => {
             button.addEventListener('click', (event) => {
                 const categoryId = event.target.dataset.id;
@@ -62,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Function to populate form for editing
     function populateFormForEdit(category) {
         editCategoryIdInput.value = category.id;
         categoryNameInput.value = category.name;
@@ -71,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: addCategoryForm.offsetTop - 20, behavior: 'smooth' });
     }
 
-    // Function to reset the form
     function resetForm() {
         addCategoryForm.reset();
         editCategoryIdInput.value = '';
@@ -79,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelEditBtn.style.display = 'none';
     }
 
-    // Function to handle adding or updating a category
     async function addOrUpdateCategory(event) {
         event.preventDefault();
         const categoryName = categoryNameInput.value.trim();
@@ -108,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             resetForm();
-            fetchCategories(); // Refresh the list
+            fetchCategories();
             alert(`Category ${categoryId ? 'updated' : 'added'} successfully!`);
         } catch (error) {
             console.error(`Error ${categoryId ? 'updating' : 'adding'} category:`, error);
@@ -116,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Function to handle deleting a category
     async function handleDeleteCategory(categoryId, categoryName) {
         if (!confirm(`Are you sure you want to delete the category "${categoryName}" (ID: ${categoryId})? This might affect resources associated with this category.`)) {
             return;
@@ -127,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) {
                 let errorData = { message: `Request failed with status: ${response.status} ${response.statusText}` };
-                 if (response.status !== 204) { // 204 No Content might not have a JSON body
+                 if (response.status !== 204) {
                     try {
                         const serverError = await response.json();
                         errorData.message = serverError.error || serverError.message || errorData.message;
@@ -138,23 +131,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.message);
             }
             alert('Category deleted successfully!');
-            fetchCategories(); // Refresh the list
+            fetchCategories();
         } catch (error) {
             console.error('Error deleting category:', error.message, error.stack);
             alert(`Error deleting category: ${error.message}`);
         }
     }
 
-    // Add event listener for the form submission
     if (addCategoryForm) {
         addCategoryForm.addEventListener('submit', addOrUpdateCategory);
     }
 
-    // Add event listener for the cancel button
     if (cancelEditBtn) {
         cancelEditBtn.addEventListener('click', resetForm);
     }
 
-    // Initial fetch of categories
     fetchCategories();
 });

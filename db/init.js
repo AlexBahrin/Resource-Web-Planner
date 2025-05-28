@@ -1,17 +1,25 @@
-// Database initialization - creates tables if they don't exist
-
 const pool = require('../config/dbConfig');
 
 async function initializeDatabase() {
   const client = await pool.connect();
   try {
     await client.query(`
-      CREATE TABLE IF NOT EXISTS categories (
+      CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE
+        username VARCHAR(255) NOT NULL UNIQUE,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('Categories table checked/created.');
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS resources (
@@ -21,34 +29,22 @@ async function initializeDatabase() {
         quantity INTEGER,
         description TEXT,
         added_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        low_stock_threshold INTEGER DEFAULT 5
+        low_stock_threshold INTEGER DEFAULT 5,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
       );
     `);
-    console.log('Resources table checked/created.');
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL, -- Store hashed passwords only!
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    console.log('Users table checked/created.');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         message TEXT NOT NULL,
         resource_id INTEGER REFERENCES resources(id) ON DELETE CASCADE,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- Optional: if notification is user-specific
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         type VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         is_read BOOLEAN DEFAULT FALSE
       );
     `);
-    console.log('Notifications table checked/created.');
 
   } catch (err) {
     console.error('Error initializing database tables:', err.stack);
