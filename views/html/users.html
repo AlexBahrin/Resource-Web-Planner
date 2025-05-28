@@ -3,16 +3,35 @@
 <head>
   <title>Users</title>
   <link rel="stylesheet" href="/css/styles.css">
-  <script src="/js/users.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <div class="container">
-    <h2>Users</h2>
-    <div id="users-list">
-      <!-- Users will be inserted here dynamically -->
+    <h2>User and Group Management</h2>
+    
+    <h2>Your Details</h2>
+    <div id="user-details-container">
+        <p>Loading your details...</p>
     </div>
+
+    <h2>Group Management</h2>
+    <div id="group-status-container">
+        <p>Loading group status...</p>
+    </div>
+    <div id="group-actions-container">
+        <!-- Buttons will be dynamically added here by users.js -->
+    </div>
+
+    <div id="users-list-container" style="display: none;"> 
+      <!-- Keeping this for now, but will be hidden as per new requirements -->
+      <h3>All Users</h3>
+      <div id="users-list">
+        <!-- Users will be inserted here dynamically -->
+      </div>
+    </div>
+
     <a class="back-link" href="/main">Back to Dashboard</a>
   </div>
+  <script src="/js/users.js"></script> <!-- Ensure script is at the end -->
 </body>
 </html>

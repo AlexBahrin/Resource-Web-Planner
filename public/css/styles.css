@@ -86,6 +86,60 @@ button:hover {
   text-decoration: underline;
 }
 
+/* Notification list styles */
+.notifications-list {
+  list-style: none;
+  padding: 0;
+}
+
+.notification-item {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-message {
+  font-size: 1.1em;
+  color: #333;
+}
+
+.notification-date {
+  font-size: 0.9em;
+  color: #777;
+}
+
+.notification-item button {
+  padding: 8px 12px; /* Standardized padding */
+  font-size: 14px;    /* Standardized font size */
+  min-width: 120px;   /* Minimum width to ensure consistency */
+  text-align: center;
+  margin-top: 5px; /* Add some space above the buttons */
+}
+
+/* Style for mark as read button specifically if needed, e.g., different color */
+.mark-read-btn {
+  background-color: #28a745; /* Green */
+}
+
+.mark-read-btn:hover {
+  background-color: #218838;
+}
+
+/* Style for delete button specifically if needed, e.g., different color */
+.delete-notification-btn {
+  background-color: #dc3545; /* Red */
+}
+
+.delete-notification-btn:hover {
+  background-color: #c82333;
+}
+
+
 /* Dashboard button styles */
 .btn-group {
   display: flex;
@@ -353,74 +407,6 @@ li:hover {
 
 .data-table tr:last-child td {
   border-bottom: none;
-}
-
-.data-table tr:hover {
-  background-color: #f5f5f5;
-}
-
-/* Notifications styles */
-.notifications-list {
-  list-style: none;
-  padding: 0;
-}
-
-.notification-item {
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  background-color: #f9f9f9;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.notification-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.notification-message {
-  margin-bottom: 10px;
-  font-size: 16px;
-}
-
-.notification-date {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.mark-read-btn {
-  background-color: #1976d2;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.mark-read-btn:hover {
-  background-color: #1565c0;
-}
-
-/* Table styles */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-}
-
-.data-table th, 
-.data-table td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.data-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
 }
 
 .data-table tr:hover {

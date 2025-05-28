@@ -1,5 +1,6 @@
 const pool = require('../config/dbConfig');
 const { parseJsonBody } = require('../util/requestUtils');
+const { sendNotificationEmail } = require('../util/emailService'); // Added email service
 
 async function handleResources(req, res) {
   const path = req.path;
@@ -57,10 +58,20 @@ async function handleResources(req, res) {
       console.log('POST /api/resources - Resource created:', newResource);
 
       if (newResource.quantity < newResource.low_stock_threshold) {
+        const message = `Warning: Resource "${newResource.name}" is low in stock (${newResource.quantity} remaining).`;
         await pool.query(
           'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
-          [`Warning: Resource "${newResource.name}" is low in stock (${newResource.quantity} remaining).`, newResource.id, 'low_stock', userId]
+          [message, newResource.id, 'low_stock', userId]
         );
+        // Send email notification
+        const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length > 0 && userResult.rows[0].email) {
+          sendNotificationEmail(
+            userResult.rows[0].email,
+            `Low Stock Alert: ${newResource.name}`,
+            message
+          ).catch(console.error); // Log email sending errors but don't block the response
+        }
       }
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(newResource));
@@ -73,14 +84,20 @@ async function handleResources(req, res) {
   }
 
   if (path === '/api/resources' && method === 'GET') {
+    if (!userId) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not authenticated.' }));
+        return true;
+    }
     try {
       const query = `
         SELECT r.id, r.name, r.category_id, c.name AS category_name, r.quantity, r.description, r.low_stock_threshold, r.user_id 
         FROM resources r
         LEFT JOIN categories c ON r.category_id = c.id
+        WHERE r.user_id = $1
         ORDER BY r.id ASC
       `; 
-      const result = await pool.query(query);
+      const result = await pool.query(query, [userId]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result.rows));
     } catch (dbErr) {
@@ -98,8 +115,13 @@ async function handleResources(req, res) {
       res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
       return true;
     }
+    if (!userId) { 
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not authenticated.' }));
+        return true;
+    }
     
-    const result = await pool.query('SELECT * FROM resources WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM resources WHERE id = $1 AND user_id = $2', [id, userId]);
     if (result.rows.length === 0) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Resource not found.' }));
@@ -164,11 +186,22 @@ async function handleResources(req, res) {
       const newQty = updatedResource.quantity;
       const threshold = updatedResource.low_stock_threshold;
 
-      if (newQty < threshold && (oldQty === undefined || oldQty >= threshold)) {
+      // Check if quantity was provided in the request and the new quantity is below the threshold
+      if (quantity !== undefined && newQty < threshold) {
+        const message = `Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`;
          await pool.query(
           'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
-          [`Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`, updatedResource.id, 'low_stock', userId]
+          [message, updatedResource.id, 'low_stock', userId]
         );
+        // Send email notification
+        const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length > 0 && userResult.rows[0].email) {
+          sendNotificationEmail(
+            userResult.rows[0].email,
+            `Low Stock Alert: ${updatedResource.name}`,
+            message
+          ).catch(console.error); // Log email sending errors but don't block the response
+        }
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(updatedResource));

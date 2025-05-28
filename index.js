@@ -9,6 +9,7 @@ const { handleCategories } = require('./routes/categories');
 const { handleResources } = require('./routes/resources');
 const { handleUsers } = require('./routes/users');
 const { handleNotifications } = require('./routes/notifications');
+const { handleGroups } = require('./routes/groups'); // Added groups handler
 const { serveResourcesPage, serveUsersPage, serveNotificationsPage } = require('./routes/pages');
 
 const port = 8087;
@@ -106,39 +107,46 @@ const server = http.createServer(async (req, res) => {
     }
     
     if (pathname === '/main' || pathname.startsWith('/api/') || pathname === '/categories' || pathname === '/resources' || pathname === '/users' || pathname === '/notifications') {
-      if (!req.userId && pathname !== '/api/users' && !(pathname === '/api/categories' && method === 'GET') && !(pathname === '/api/resources' && method === 'GET')) {
-        if (pathname.startsWith('/api/')){
+      // Session check for all protected routes
+      const sessionId = req.headers.cookie?.split(';').find(c => c.trim().startsWith('sessionId='))?.split('=')[1];
+      const session = sessions[sessionId];
+
+      if (!session || session.expires < Date.now()) {
+        if (pathname.startsWith('/api/')) {
             res.writeHead(401, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Unauthorized. Please log in.' }));
         } else {
-            res.writeHead(302, { 'Location': '/' });
+            res.writeHead(302, { 'Location': '/' }); // Redirect to login
             res.end();
         }
         return;
       }
+      req.userId = session.userId;
+      req.username = session.username;
+      req.userRole = session.role; // Make role available in req
+      console.log(`User ${req.username} (ID: ${req.userId}, Role: ${req.userRole}) authenticated for ${method} ${pathname}`);
     }
 
-    if (pathname === '/main' && method === 'GET') {
+    if (pathname === '/main' && method === 'GET') { // Serve dashboard
       handleDashboard(req, res);
       return;
     }
 
     if (pathname.startsWith('/api/')) {
-      if (pathname.startsWith('/api/categories')) {
-        if (await handleCategories(req, res)) return;
-      } else if (pathname.startsWith('/api/users')) {
-        if (await handleUsers(req, res)) return;
+      if (pathname.startsWith('/api/categories')) { // Changed from === to startsWith
+        await handleCategories(req, res, pool);
       } else if (pathname.startsWith('/api/resources')) {
-        if (await handleResources(req, res)) return;
+        await handleResources(req, res, pool);
+      } else if (pathname.startsWith('/api/users')) {
+        await handleUsers(req, res, pool);
       } else if (pathname.startsWith('/api/notifications')) {
-        if (await handleNotifications(req, res)) return;
-      }
-      
-      if (!res.headersSent) {
+        await handleNotifications(req, res, pool);
+      } else if (pathname.startsWith('/api/groups')) { // Added groups route
+        await handleGroups(req, res, pool);
+      } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'API endpoint not found' }));
       }
-      return;
     }
     else if (pathname === '/categories' && method === 'GET') {
       res.setHeader('Content-Type', 'text/html');
