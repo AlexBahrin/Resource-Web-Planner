@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const pool = require('./config/dbConfig');
 
-// Configure pg to parse DATE columns as YYYY-MM-DD strings
 const { types } = require('pg');
 types.setTypeParser(types.builtins.DATE, val => val);
 
@@ -17,27 +16,22 @@ const { handleNotifications } = require('./routes/notifications');
 const { handleGroups } = require('./routes/groups');
 const { handleStatistics } = require('./routes/statistics');
 const { serveResourcesPage, serveUsersPage, serveNotificationsPage, serveStatisticsPage } = require('./routes/pages');
-const { startExpirationChecker } = require('./tasks/expirationChecker'); // Added import
-const { startLowStockChecker } = require('./tasks/lowStockChecker'); // Added import
+const { startExpirationChecker } = require('./tasks/expirationChecker');
+const { startLowStockChecker } = require('./tasks/lowStockChecker');
 
 const port = 8087;
 
 initializeDatabase()
     .then(() => {
         console.log('Database initialized successfully.');
-        // Start the expiration checker after database is initialized
-        startExpirationChecker(60 * 24); // Run once a day
-        // Or for testing, run more frequently, e.g., every 1 minute:
-        // startExpirationChecker(1);
+        startExpirationChecker(60 * 24);
 
-        // Start the low stock checker after database is initialized
-        startLowStockChecker(60 * 24); // Run once a day (every 24 hours)
-        // Or for testing, run more frequently, e.g., every 1 minute:
-        // startLowStockChecker(1);
+        startLowStockChecker(60 * 24);
+
     })
     .catch(err => {
         console.error('Failed to initialize database or start tasks:', err);
-        process.exit(1); // Exit if DB init fails
+        process.exit(1);
     });
 
 function serveStaticFile(req, res, filePath) {
@@ -106,8 +100,8 @@ const server = http.createServer(async (req, res) => {
       const filePath = path.join(__dirname, 'public', pathname);
       serveStaticFile(req, res, filePath);
       return;
-    } else if (pathname.startsWith('/pictures/')) { // Add this else if block
-      const filePath = path.join(__dirname, pathname); // Assumes 'pictures' is at the root
+    } else if (pathname.startsWith('/pictures/')) {
+      const filePath = path.join(__dirname, pathname);
       serveStaticFile(req, res, filePath);
       return;
     }
@@ -160,28 +154,23 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     
-    // Handle import endpoint first as a special case
     if (pathname === '/api/resources/import') {
       console.log('Handling import request to', pathname);
       const result = await handleResources(req, res);
       console.log('Import handler result:', result);
-      // Always return after handling import request
       return;
     }
     
-    // Handle export endpoint as a special case
     if (pathname === '/api/resources/export') {
       console.log('Handling export request to', pathname);
       const result = await handleResources(req, res);
       console.log('Export handler result:', result);
-      // Always return after handling export request
       return;
     }
 
     if (pathname.startsWith('/api/')) {
       let handled = false;
       
-      // Handle other API routes
       if (pathname.startsWith('/api/categories')) {
         handled = await handleCategories(req, res);
       } else if (pathname.startsWith('/api/resources')) {
@@ -191,7 +180,7 @@ const server = http.createServer(async (req, res) => {
       } else if (pathname.startsWith('/api/notifications')) {
         handled = await handleNotifications(req, res);
       } else if (pathname.startsWith('/api/groups')) {
-        handled = await handleGroups(req, res, pool); // Pass the pool object here
+        handled = await handleGroups(req, res, pool);
       } else if (pathname.startsWith('/api/statistics')) {
         handled = await handleStatistics(req, res);
       }
@@ -201,7 +190,6 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'API endpoint not found' }));
       }
       
-      // Return after API handling to prevent further processing
       return;
     }
     else if (pathname === '/categories' && method === 'GET') {

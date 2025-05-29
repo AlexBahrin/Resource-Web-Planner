@@ -1,8 +1,8 @@
 const pool = require('../config/dbConfig');
 const { sendNotificationEmail } = require('../util/emailService');
 
-const CHECK_INTERVAL_HOURS = 24; // How often this check itself runs
-const NOTIFICATION_THROTTLE_HOURS = 23.5; // Don't re-notify if a notification was sent within this period
+const CHECK_INTERVAL_HOURS = 24;
+const NOTIFICATION_THROTTLE_HOURS = 23.5;
 
 async function checkLowStockResources() {
     console.log('Running checkLowStockResources task...');
@@ -39,7 +39,6 @@ async function checkLowStockResources() {
             }
 
             for (const recipient of recipients) {
-                // Check if a similar periodic notification was sent recently for this user and resource
                 const recentNotificationCheck = await pool.query(
                     `SELECT id FROM notifications
                      WHERE resource_id = $1

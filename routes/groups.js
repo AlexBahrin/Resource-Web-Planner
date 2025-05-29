@@ -49,7 +49,6 @@ async function handleGroups(req, res, poolArgument) {
                     }
 
                     try {
-                        // Start a transaction
                         await currentPool.query('BEGIN');
 
                         const groupResult = await currentPool.query(
@@ -58,27 +57,24 @@ async function handleGroups(req, res, poolArgument) {
                         );
                         const newGroup = groupResult.rows[0];
 
-                        // Add the creator to the group
-                        if (req.userId) { // Ensure userId is available from session/auth middleware
+                        if (req.userId) {
                             await currentPool.query(
                                 'UPDATE users SET group_id = $1 WHERE id = $2',
                                 [newGroup.id, req.userId]
                             );
                             console.log(`User ${req.userId} automatically added to new group ${newGroup.id}`);
                         } else {
-                            // This case should ideally not happen if user creation requires authentication
                             console.warn('No userId found in request, cannot add creator to group automatically.');
                         }
 
-                        await currentPool.query('COMMIT'); // Commit transaction
+                        await currentPool.query('COMMIT');
 
                         if (!res.headersSent) {
                             res.writeHead(201, { 'Content-Type': 'application/json' });
-                            // Return the group and a message indicating the user was added
                             res.end(JSON.stringify({ ...newGroup, message: `Group created and user ${req.userId} added.` }));
                         }
                     } catch (dbError) {
-                        await currentPool.query('ROLLBACK'); // Rollback transaction on error
+                        await currentPool.query('ROLLBACK');
                         console.error('DB Error creating group (/api/groups POST):', dbError.message, 'Input name:', name);
                         if (!res.headersSent) {
                             if (dbError.code === '23505' && dbError.constraint === 'groups_name_key') {

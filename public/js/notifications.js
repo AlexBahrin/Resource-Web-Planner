@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
         html += '</ul>';
         notificationsList.innerHTML = html;
 
-        // Add event listeners for new buttons
         document.querySelectorAll('.mark-read-btn').forEach(button => {
           button.addEventListener('click', function() {
             const id = this.getAttribute('data-id');
@@ -86,12 +85,10 @@ document.addEventListener('DOMContentLoaded', function() {
           markReadButton.remove();
         }
       }
-      // Re-fetch notifications to update the list based on the current view
       fetchNotifications();
     })
     .catch(error => {
       console.error('Error marking notification as read:', error);
-      // Optionally, provide user feedback
     });
   }
 
@@ -101,26 +98,21 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(response => {
       if (!response.ok) {
-        if (response.status === 204) return null; // No content is a success for DELETE
+        if (response.status === 204) return null;
         throw new Error('Failed to delete notification');
       }
-      // For 204 No Content, there might not be a JSON body
       return response.status === 204 ? null : response.json();
     })
     .then(() => {
       if (listItem) {
         listItem.remove();
       }
-      // If the list becomes empty, show "No notifications."
       if (notificationsList.children.length === 0 || (notificationsList.firstElementChild && notificationsList.firstElementChild.children.length === 0)) {
         notificationsList.innerHTML = '<p>No new notifications.</p>';
       }
-      // Optionally, re-fetch to ensure consistency, though direct DOM manipulation is faster
-      // fetchNotifications(); 
     })
     .catch(error => {
       console.error('Error deleting notification:', error);
-      // Optionally, provide user feedback
     });
   }
 

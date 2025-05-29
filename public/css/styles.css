@@ -351,24 +351,24 @@ li:hover {
 
 
 .back-link {
-  display: block; /* Ensures it takes its own line */
-  width: fit-content; /* Or a specific width like 200px */
+  display: block;
+  width: fit-content;
   margin-top: 30px;
-  margin-bottom: 20px; /* Added margin to the bottom */
-  margin-left: auto; /* Centers the link */
-  margin-right: auto; /* Centers the link */
-  padding: 10px 20px; /* Added padding to make it look more like a button */
-  background-color: #6c757d; /* Added background color */
-  color: white; /* Changed text color to white */
-  border-radius: 4px; /* Added border radius */
+  margin-bottom: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px 20px;
+  background-color: #6c757d;
+  color: white;
+  border-radius: 4px;
   text-align: center;
-  text-decoration: none; /* Ensure no underline */
-  transition: background-color 0.3s; /* Smooth transition for hover */
+  text-decoration: none;
+  transition: background-color 0.3s;
 }
 
 .back-link:hover {
-  background-color: #5a6268; /* Darken button on hover */
-  text-decoration: none; /* Ensure no underline on hover */
+  background-color: #5a6268;
+  text-decoration: none;
 }
 
 .data-table {
@@ -443,7 +443,6 @@ li:hover {
     border-top: 1px solid #ccc;
 }
 
-/* Background image styles */
 .body-bg-dashboard {
     background-image: url('/pictures/dashboard.jpg');
 }
@@ -468,17 +467,17 @@ li:hover {
     background-image: url('/pictures/users.jpg');
 }
 
-/* Common background styles */
+
 body[class*="body-bg-"] {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: fixed; /* Keeps the background fixed during scroll */
-    min-height: 100vh; /* Ensure body takes at least full viewport height */
+    background-attachment: fixed;
+    min-height: 100vh;
 }
 
-/* Adjust container opacity for better readability over background images */
+
 body[class*="body-bg-"] .container {
-    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+    background-color: rgba(255, 255, 255, 0.9);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }

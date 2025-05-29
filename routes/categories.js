@@ -226,7 +226,7 @@ async function handleCategories(req, res) {
                     } catch (dbErr) {
                         console.error('Error updating category:', dbErr.message);
                         if (!res.headersSent) {
-                            if (dbErr.code === '23505') { // Unique constraint violation
+                            if (dbErr.code === '23505') {
                                 res.writeHead(409, { 'Content-Type': 'application/json' });
                                 res.end(JSON.stringify({ message: 'A category with this name already exists.' }));
                             } else {
@@ -256,23 +256,34 @@ async function handleCategories(req, res) {
                 }
 
                 try {
-                    const result = await pool.query('DELETE FROM categories WHERE id = $1', [parseInt(categoryId)]);
+                    const resourceCheckQuery = 'SELECT id FROM resources WHERE category_id = $1 LIMIT 1';
+                    const resourceCheckResult = await pool.query(resourceCheckQuery, [categoryId]);
+
+                    if (resourceCheckResult.rows.length > 0) {
+                        if (!res.headersSent) {
+                            res.writeHead(409, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({ error: 'Cannot delete category: it is currently in use by one or more resources.' }));
+                        }
+                        return resolve(true);
+                    }
+
+                    const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING *', [parseInt(categoryId)]);
                     if (result.rowCount === 0) {
                         if (!res.headersSent) {
                             res.writeHead(404, { 'Content-Type': 'application/json' });
                             res.end(JSON.stringify({ message: 'Category not found for deletion.' }));
                         }
-                        return reject(new Error("Category not found for DELETE."));
+                        return resolve(true); 
                     }
                     if (!res.headersSent) {
-                        res.writeHead(204, { 'Content-Type': 'application/json' }); // No Content
-                        res.end();
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ message: 'Category deleted successfully', category: result.rows[0] }));
                     }
-                    resolve();
+                    resolve(true);
                 } catch (dbErr) {
                     console.error('Error deleting category:', dbErr.message);
                     if (!res.headersSent) {
-                        if (dbErr.code === '23503') { 
+                        if (dbErr.code === '23503') {
                             res.writeHead(409, { 'Content-Type': 'application/json' });
                             res.end(JSON.stringify({ message: 'Cannot delete category as it is referenced by other resources.', error: dbErr.detail }));
                         } else {

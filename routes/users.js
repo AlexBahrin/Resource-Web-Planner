@@ -76,7 +76,6 @@ async function handleUsers(req, res) {
     try {
       await pool.query('BEGIN');
 
-      // 1. Get the user's current group_id
       const userQuery = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
       if (userQuery.rows.length === 0) {
         await pool.query('ROLLBACK');
@@ -87,16 +86,13 @@ async function handleUsers(req, res) {
       const originalGroupId = userQuery.rows[0].group_id;
 
       if (!originalGroupId) {
-        await pool.query('ROLLBACK'); // No transaction needed if user is not in a group
+        await pool.query('ROLLBACK');
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        // User is already not in a group, consider it a successful "exit"
         const currentUserState = await pool.query('SELECT id, username, group_id FROM users WHERE id = $1', [userId]);
         res.end(JSON.stringify({ message: 'User is not currently in any group.', user: currentUserState.rows[0] || { id: userId, group_id: null } }));
         return true;
       }
 
-      // User is in a group (originalGroupId is not null)
-      // 2. Find other members in the group (excluding the current user)
       const otherMembersQuery = await pool.query(
         'SELECT id FROM users WHERE group_id = $1 AND id != $2 ORDER BY id ASC LIMIT 1',
         [originalGroupId, userId]
@@ -104,7 +100,6 @@ async function handleUsers(req, res) {
 
       let resourceTransferMessage = "";
       if (otherMembersQuery.rows.length > 0) {
-        // 3a. If other members exist, transfer resources
         const newOwnerId = otherMembersQuery.rows[0].id;
         const resourceUpdateResult = await pool.query(
           'UPDATE resources SET user_id = $1 WHERE user_id = $2',
@@ -118,18 +113,15 @@ async function handleUsers(req, res) {
             console.log(`User ${userId} had no resources to transfer to user ${newOwnerId} upon leaving group ${originalGroupId}.`);
         }
       } else {
-        // 3b. If no other members, user keeps their resources.
         resourceTransferMessage = "User is the last member, resources retained.";
         console.log(`User ${userId} is the last member of group ${originalGroupId}, retains their resources.`);
       }
 
-      // 4. Update the user's group_id to NULL
       const updateUserResult = await pool.query(
         'UPDATE users SET group_id = NULL WHERE id = $1 RETURNING id, username, group_id',
         [userId]
       );
 
-      // 5. Check if the original group needs to be deleted
       const groupMembersQuery = await pool.query('SELECT COUNT(*) AS member_count FROM users WHERE group_id = $1', [originalGroupId]);
       const memberCount = parseInt(groupMembersQuery.rows[0].member_count, 10);
       let groupStatusMessage = "";

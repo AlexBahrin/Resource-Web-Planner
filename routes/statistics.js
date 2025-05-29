@@ -5,7 +5,6 @@ async function handleStatistics(req, res) {
   const method = req.method;
   const userId = req.userId;
   
-  // Endpoint for getting summary statistics
   if (path === '/api/statistics/summary' && method === 'GET') {
     if (!userId) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -14,18 +13,15 @@ async function handleStatistics(req, res) {
     }
     
     try {
-      // Query 0: Get current user's group_id
       const userGroupRes = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
       const groupId = userGroupRes.rows.length > 0 ? userGroupRes.rows[0].group_id : null;
 
-      let targetUserIds = [userId]; // Default to only the current user
+      let targetUserIds = [userId];
       if (groupId) {
-        // If in a group, get all user IDs from that group
         const groupMembersRes = await pool.query('SELECT id FROM users WHERE group_id = $1', [groupId]);
         targetUserIds = groupMembersRes.rows.map(row => row.id);
       }
 
-      // Query 1: Get total count of resources by category for target users
       const categoryQuery = `
         SELECT c.id, c.name, COUNT(r.id) as resource_count
         FROM categories c
@@ -36,7 +32,6 @@ async function handleStatistics(req, res) {
       `;
       const categoryResult = await pool.query(categoryQuery, [targetUserIds]);
       
-      // Query 2: Get stock status statistics for target users
       const stockQuery = `
         SELECT 
           COUNT(*) FILTER (WHERE quantity <= low_stock_threshold) as low_stock_count,
@@ -46,7 +41,6 @@ async function handleStatistics(req, res) {
       `;
       const stockResult = await pool.query(stockQuery, [targetUserIds]);
       
-      // Query 3: Get quantity distribution for target users
       const quantityQuery = `
         SELECT 
           COUNT(*) FILTER (WHERE quantity = 0) as zero_count,
@@ -60,7 +54,6 @@ async function handleStatistics(req, res) {
       `;
       const quantityResult = await pool.query(quantityQuery, [targetUserIds]);
       
-      // Return combined statistics
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         categoriesData: categoryResult.rows,
@@ -77,7 +70,6 @@ async function handleStatistics(req, res) {
     return true;
   }
   
-  // If no matching endpoint is found, return false to allow other handlers to process the request
   return false;
 }
 

@@ -1,4 +1,3 @@
-// filepath: /Users/alex/Documents/Facultate/semestrul_4/WEB/rew/public/js/resources.js
 document.addEventListener('DOMContentLoaded', function() {
   const resourcesList = document.getElementById('resources-list');
   const addResourceForm = document.getElementById('add-resource-form');
@@ -12,12 +11,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const formSubmitButton = addResourceForm.querySelector('button[type="submit"]');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
+  let originalResources = [];
+  let currentSortState = { column: null, direction: 'none' };
+
   function showToast(message, type = 'info', duration = 3000) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
 
-    // Basic styling - consider moving to styles.css for better management
     toast.style.position = 'fixed';
     toast.style.bottom = '20px';
     toast.style.left = '50%';
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toast.style.color = 'white';
     toast.style.zIndex = '1000';
     toast.style.transition = 'opacity 0.5s ease-in-out';
-    toast.style.opacity = '0'; // Start faded out
+    toast.style.opacity = '0';
 
     if (type === 'error') {
       toast.style.backgroundColor = 'red';
@@ -36,22 +37,21 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (type === 'warning') {
       toast.style.backgroundColor = 'orange';
     } else {
-      toast.style.backgroundColor = '#333'; // Default info
+      toast.style.backgroundColor = '#333';
     }
 
     document.body.appendChild(toast);
 
-    // Fade in
+
     setTimeout(() => {
       toast.style.opacity = '1';
-    }, 100); // Short delay to allow CSS transition to apply
+    }, 100);
 
-    // Fade out and remove
     setTimeout(() => {
       toast.style.opacity = '0';
       setTimeout(() => {
         toast.remove();
-      }, 500); // Wait for fade out transition to complete
+      }, 500);
     }, duration);
   }
 
@@ -64,23 +64,65 @@ document.addEventListener('DOMContentLoaded', function() {
         return response.json();
       })
       .then(resources => {
+        originalResources = resources.map(r => ({ ...r }));
+        renderTable(originalResources);
+      })
+      .catch(error => {
+        console.error('Error fetching resources:', error);
         const resourcesList = document.getElementById('resources-list');
-        if (!resources || resources.length === 0) {
-          resourcesList.innerHTML = '<p>No resources found.</p>';
-          return;
+        if (resourcesList) {
+            resourcesList.innerHTML = 
+            `<p class="error-message">Error loading resources: ${error.message}</p>`;
         }
-        let html = '<table class="data-table">';
-        html += '<thead><tr><th>Name</th><th>Category</th><th>Quantity</th><th>Description</th><th>Low Stock Threshold</th><th>Expiration Date</th><th>Actions</th></tr></thead>';
-        html += '<tbody>';
-        resources.forEach(resource => {
-          const categoryDisplay = resource.category_id 
-            ? `${resource.category_name || 'Unknown Category'} (ID: ${resource.category_id})` 
-            : 'N/A';
-          const expirationDateDisplay = resource.expiration_date 
-            ? new Date(resource.expiration_date).toLocaleDateString() 
-            : 'N/A';
-          html += `<tr>
-            <td>${resource.name}</td>
+      });
+  }
+
+  function getSortIndicator(columnKey) {
+    if (currentSortState.column === columnKey) {
+      if (currentSortState.direction === 'asc') return ' \u25B2';
+      if (currentSortState.direction === 'desc') return ' \u25BC';
+    }
+    return '';
+  }
+
+  function renderTable(resourcesToDisplay) {
+    const resourcesList = document.getElementById('resources-list');
+    resourcesList.innerHTML = '';
+
+    if (originalResources.length === 0) {
+      resourcesList.innerHTML = '<p>No resources found.</p>';
+      return;
+    }
+
+    let html = '<table class="data-table">';
+    const headers = [
+      { key: 'name', title: 'Name', sortable: true },
+      { key: 'category_name', title: 'Category', sortable: true },
+      { key: 'quantity', title: 'Quantity', sortable: true },
+      { key: 'description', title: 'Description', sortable: true },
+      { key: 'low_stock_threshold', title: 'Low Stock Threshold', sortable: true },
+      { key: 'expiration_date', title: 'Expiration Date', sortable: true },
+      { key: 'actions', title: 'Actions', sortable: false }
+    ];
+
+    html += '<thead><tr>';
+    headers.forEach(header => {
+      if (header.sortable) {
+        html += `<th data-column-key="${header.key}" style="cursor: pointer;">${header.title}${getSortIndicator(header.key)}</th>`;
+      } else {
+        html += `<th>${header.title}</th>`;
+      }
+    });
+    html += '</tr></thead>';
+
+    html += '<tbody>';
+    resourcesToDisplay.forEach(resource => {
+      const categoryDisplay = resource.category_name || 'N/A';
+      const expirationDateDisplay = resource.expiration_date
+        ? new Date(resource.expiration_date).toLocaleDateString()
+        : 'N/A';
+      html += `<tr>
+            <td>${resource.name || ''}</td>
             <td>${categoryDisplay}</td>
             <td>${resource.quantity === null || resource.quantity === undefined ? 0 : resource.quantity}</td>
             <td>${resource.description || ''}</td>
@@ -91,34 +133,83 @@ document.addEventListener('DOMContentLoaded', function() {
               <button class="delete-btn" data-id="${resource.id}" data-name="${resource.name}">Delete</button>
             </td>
           </tr>`;
-        });
-        html += '</tbody></table>';
-        resourcesList.innerHTML = html;
+    });
+    html += '</tbody></table>';
+    resourcesList.innerHTML = html;
 
-        // Add event listeners to buttons
-        document.querySelectorAll('.edit-btn').forEach(button => {
-          button.addEventListener('click', (event) => {
-            const resourceId = event.target.dataset.id;
-            const resourceToEdit = resources.find(r => r.id.toString() === resourceId);
-            if (resourceToEdit) {
-              populateFormForEdit(resourceToEdit);
-            }
-          });
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(button => {
-          button.addEventListener('click', (event) => {
-            const resourceId = event.target.dataset.id;
-            const resourceName = event.target.dataset.name;
-            handleDeleteResource(resourceId, resourceName);
-          });
-        });
-      })
-      .catch(error => {
-        console.error('Error fetching resources:', error);
-        document.getElementById('resources-list').innerHTML = 
-          `<p class="error-message">Error loading resources: ${error.message}</p>`;
+    document.querySelectorAll('#resources-list th[data-column-key]').forEach(th => {
+      th.addEventListener('click', () => {
+        sortTable(th.dataset.columnKey);
       });
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        const resourceId = event.target.dataset.id;
+        const resourceToEdit = originalResources.find(r => r.id.toString() === resourceId);
+        if (resourceToEdit) {
+          populateFormForEdit(resourceToEdit);
+        }
+      });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        const resourceId = event.target.dataset.id;
+        const resourceName = event.target.dataset.name;
+        handleDeleteResource(resourceId, resourceName);
+      });
+    });
+  }
+
+  function sortTable(columnKey) {
+    if (currentSortState.column === columnKey) {
+      if (currentSortState.direction === 'asc') {
+        currentSortState.direction = 'desc';
+      } else if (currentSortState.direction === 'desc') {
+        currentSortState.direction = 'none';
+      } else {
+        currentSortState.direction = 'asc';
+      }
+    } else {
+      currentSortState.column = columnKey;
+      currentSortState.direction = 'asc';
+    }
+
+    let resourcesToRender;
+    if (currentSortState.direction === 'none') {
+      resourcesToRender = [...originalResources];
+    } else {
+      let sortedResources = [...originalResources];
+      sortedResources.sort((a, b) => {
+        let valA = a.hasOwnProperty(columnKey) ? a[columnKey] : null;
+        let valB = b.hasOwnProperty(columnKey) ? b[columnKey] : null;
+
+        const isValANull = valA === null || valA === undefined || (typeof valA === 'string' && valA.trim() === '');
+        const isValBNull = valB === null || valB === undefined || (typeof valB === 'string' && valB.trim() === '');
+
+        if (isValANull && isValBNull) return 0;
+        if (isValANull) return 1;
+        if (isValBNull) return -1;
+
+        if (columnKey === 'expiration_date') {
+          valA = new Date(valA).getTime();
+          valB = new Date(valB).getTime();
+        } else if (typeof valA === 'string') {
+          valA = valA.toLowerCase();
+          valB = valB.toLowerCase();
+          const comparison = valA.localeCompare(valB);
+          return currentSortState.direction === 'asc' ? comparison : -comparison;
+        }
+        let comparisonResult = 0;
+        if (valA < valB) comparisonResult = -1;
+        if (valA > valB) comparisonResult = 1;
+        
+        return currentSortState.direction === 'asc' ? comparisonResult : -comparisonResult;
+      });
+      resourcesToRender = sortedResources;
+    }
+    renderTable(resourcesToRender);
   }
 
   async function fetchCategoriesForDropdown() {
@@ -149,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantity = parseInt(resourceQuantityInput.value, 10);
     const description = resourceDescriptionInput.value.trim();
     const lowStockThreshold = parseInt(lowStockThresholdInput.value, 10);
-    const expirationDate = resourceExpirationDateInput.value.trim(); // Get expiration date
+    const expirationDate = resourceExpirationDateInput.value.trim();
     const resourceId = editResourceIdInput.value;
 
     if (!resourceName || !categoryId) {
@@ -181,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (expirationDate) {
       body.expiration_date = expirationDate;
     } else {
-      body.expiration_date = null; // Send null if empty to clear it
+      body.expiration_date = null;
     }
 
     try {
@@ -223,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resourceQuantityInput.value = resource.quantity;
     resourceDescriptionInput.value = resource.description || '';
     lowStockThresholdInput.value = resource.low_stock_threshold === null || resource.low_stock_threshold === undefined ? '' : resource.low_stock_threshold;
-    resourceExpirationDateInput.value = resource.expiration_date ? new Date(resource.expiration_date).toISOString().split('T')[0] : ''; // Set expiration date for editing
+    resourceExpirationDateInput.value = resource.expiration_date ? new Date(resource.expiration_date).toISOString().split('T')[0] : '';
     formSubmitButton.textContent = 'Update Resource';
     cancelEditBtn.style.display = 'inline-block';
     window.scrollTo({ top: addResourceForm.offsetTop - 20, behavior: 'smooth' });
@@ -233,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addResourceForm.reset();
     editResourceIdInput.value = '';
     resourceCategorySelect.value = '';
-    resourceExpirationDateInput.value = ''; // Reset expiration date input
+    resourceExpirationDateInput.value = '';
     formSubmitButton.textContent = 'Add Resource';
     cancelEditBtn.style.display = 'none';
   }
@@ -266,9 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Setup import/export functionality
   function setupImportExportButtons() {
-    // Setup export buttons
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const exportXmlBtn = document.getElementById('exportXmlBtn');
@@ -283,7 +372,6 @@ document.addEventListener('DOMContentLoaded', function() {
         exportXmlBtn.addEventListener('click', () => exportResources('xml'));
     }
     
-    // Setup import button and file input
     const importBtn = document.getElementById('importBtn');
     const fileInput = document.getElementById('importFile');
     
@@ -296,7 +384,6 @@ document.addEventListener('DOMContentLoaded', function() {
             importResources();
         });
         
-        // Also add visual feedback when a file is selected
         fileInput.addEventListener('change', () => {
             if (fileInput.files.length > 0) {
                 const fileName = fileInput.files[0].name;
@@ -304,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (!['json', 'csv', 'xml'].includes(fileExtension)) {
                     showToast(`Unsupported file type: .${fileExtension}. Please use JSON, CSV, or XML files.`, 'error');
-                    fileInput.value = ''; // Clear the selected file
+                    fileInput.value = '';
                     return;
                 }
                 
@@ -316,13 +403,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function exportResources(format) {
     try {
-        // Show loading indicator
         showToast(`Exporting resources as ${format.toUpperCase()}...`, 'info');
         
         const response = await fetch(`/api/resources/export?format=${format}`);
         
         if (!response.ok) {
-            // Try to parse error response
             let errorMessage = '';
             try {
                 const errorData = await response.json();
@@ -335,14 +420,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Get the content as a blob
         const blob = await response.blob();
         
-        // Set filename based on current date/time to avoid caching issues
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `resources_${timestamp}.${format}`;
         
-        // Create a download link and trigger it
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -350,7 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(a);
         a.click();
         
-        // Clean up
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
@@ -380,7 +461,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Log some debug info
     console.log('Import file selected:', {
         name: filename,
         size: file.size,
@@ -388,7 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     try {
-        // Show loading indicator
         showToast(`Importing resources from ${filename}...`, 'info');
         
         const formData = new FormData();
@@ -396,20 +475,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const response = await fetch(`/api/resources/import?filename=${encodeURIComponent(filename)}`, {
             method: 'POST',
-            body: file // Send the raw file
+            body: file
         });
         
         const result = await response.json();
         
         if (response.ok) {
-            // Display success message
             let message = result.message || 'Resources imported successfully';
             
             if (result.results) {
                 const { Succeeded, Failed } = result.results;
                 message += ` (${Succeeded} imported, ${Failed} failed)`;
                 
-                // If there were errors, show them in a separate toast
                 if (Failed > 0 && result.results.Errors && result.results.Errors.length > 0) {
                     const errorMessage = result.results.Errors.map(err => 
                         `• ${err.resource}: ${err.error}`
@@ -421,16 +498,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             showToast(message, 'success');
-            fetchResources(); // Refresh the resources list
+            fetchResources();
             
-            // Reset file input
             fileInput.value = '';
         } else {
-            // Display error message
             const errorMessage = result.error || result.message || 'Import failed';
             showToast(`Import error: ${errorMessage}`, 'error');
             
-            // If there are specific errors, log them
             if (result.details) {
                 console.error('Import error details:', result.details);
             }
@@ -441,7 +515,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
-  // Initialize the page
   if (addResourceForm) {
     addResourceForm.addEventListener('submit', addOrUpdateResource);
   }
@@ -452,7 +525,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Initial data loading
   fetchCategoriesForDropdown();
   fetchResources();
   setupImportExportButtons();
