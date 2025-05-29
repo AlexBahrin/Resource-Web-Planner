@@ -74,40 +74,82 @@ async function handleUsers(req, res) {
       return true;
     }
     try {
-      // Start a transaction
       await pool.query('BEGIN');
 
-      // Get the group_id before updating the user
-      const userGroupQuery = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
-      const groupId = userGroupQuery.rows[0]?.group_id;
+      // 1. Get the user's current group_id
+      const userQuery = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
+      if (userQuery.rows.length === 0) {
+        await pool.query('ROLLBACK');
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not found.' }));
+        return true;
+      }
+      const originalGroupId = userQuery.rows[0].group_id;
 
-      const result = await pool.query(
+      if (!originalGroupId) {
+        await pool.query('ROLLBACK'); // No transaction needed if user is not in a group
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        // User is already not in a group, consider it a successful "exit"
+        const currentUserState = await pool.query('SELECT id, username, group_id FROM users WHERE id = $1', [userId]);
+        res.end(JSON.stringify({ message: 'User is not currently in any group.', user: currentUserState.rows[0] || { id: userId, group_id: null } }));
+        return true;
+      }
+
+      // User is in a group (originalGroupId is not null)
+      // 2. Find other members in the group (excluding the current user)
+      const otherMembersQuery = await pool.query(
+        'SELECT id FROM users WHERE group_id = $1 AND id != $2 ORDER BY id ASC LIMIT 1',
+        [originalGroupId, userId]
+      );
+
+      let resourceTransferMessage = "";
+      if (otherMembersQuery.rows.length > 0) {
+        // 3a. If other members exist, transfer resources
+        const newOwnerId = otherMembersQuery.rows[0].id;
+        const resourceUpdateResult = await pool.query(
+          'UPDATE resources SET user_id = $1 WHERE user_id = $2',
+          [newOwnerId, userId]
+        );
+        if (resourceUpdateResult.rowCount > 0) {
+            resourceTransferMessage = `All ${resourceUpdateResult.rowCount} resource(s) transferred to user ${newOwnerId}.`;
+            console.log(`Resources of user ${userId} (${resourceUpdateResult.rowCount} resources) transferred to user ${newOwnerId} as part of leaving group ${originalGroupId}.`);
+        } else {
+            resourceTransferMessage = `User ${userId} had no resources to transfer to user ${newOwnerId}.`;
+            console.log(`User ${userId} had no resources to transfer to user ${newOwnerId} upon leaving group ${originalGroupId}.`);
+        }
+      } else {
+        // 3b. If no other members, user keeps their resources.
+        resourceTransferMessage = "User is the last member, resources retained.";
+        console.log(`User ${userId} is the last member of group ${originalGroupId}, retains their resources.`);
+      }
+
+      // 4. Update the user's group_id to NULL
+      const updateUserResult = await pool.query(
         'UPDATE users SET group_id = NULL WHERE id = $1 RETURNING id, username, group_id',
         [userId]
       );
 
-      if (result.rowCount === 0) {
-        await pool.query('ROLLBACK');
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'User not found or already not in a group.' }));
-        return true;
-      }
+      // 5. Check if the original group needs to be deleted
+      const groupMembersQuery = await pool.query('SELECT COUNT(*) AS member_count FROM users WHERE group_id = $1', [originalGroupId]);
+      const memberCount = parseInt(groupMembersQuery.rows[0].member_count, 10);
+      let groupStatusMessage = "";
 
-      // Check if the group needs to be deleted
-      if (groupId) {
-        const groupMembersQuery = await pool.query('SELECT COUNT(*) AS member_count FROM users WHERE group_id = $1', [groupId]);
-        const memberCount = parseInt(groupMembersQuery.rows[0].member_count, 10);
-
-        if (memberCount === 0) {
-          await pool.query('DELETE FROM groups WHERE id = $1', [groupId]);
-          console.log(`Group ${groupId} deleted as it has no more members.`);
-        }
+      if (memberCount === 0) {
+        await pool.query('DELETE FROM groups WHERE id = $1', [originalGroupId]);
+        groupStatusMessage = `Group ${originalGroupId} was deleted as it became empty.`;
+        console.log(`Group ${originalGroupId} deleted as it has no more members after user ${userId} left.`);
+      } else {
+        groupStatusMessage = `Group ${originalGroupId} now has ${memberCount} member(s).`;
       }
 
       await pool.query('COMMIT');
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Successfully exited group.', user: result.rows[0] }));
+      res.end(JSON.stringify({
+        message: `Successfully exited group. ${resourceTransferMessage} ${groupStatusMessage}`,
+        user: updateUserResult.rows[0]
+      }));
+
     } catch (dbErr) {
       await pool.query('ROLLBACK');
       console.error('DB Error on PUT /api/users/me/exit-group:', dbErr);

@@ -106,6 +106,10 @@ const server = http.createServer(async (req, res) => {
       const filePath = path.join(__dirname, 'public', pathname);
       serveStaticFile(req, res, filePath);
       return;
+    } else if (pathname.startsWith('/pictures/')) { // Add this else if block
+      const filePath = path.join(__dirname, pathname); // Assumes 'pictures' is at the root
+      serveStaticFile(req, res, filePath);
+      return;
     }
     
     if (pathname === '/' && method === 'GET') {

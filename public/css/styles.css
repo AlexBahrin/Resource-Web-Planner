@@ -442,3 +442,43 @@ li:hover {
     border: 0;
     border-top: 1px solid #ccc;
 }
+
+/* Background image styles */
+.body-bg-dashboard {
+    background-image: url('/pictures/dashboard.jpg');
+}
+
+.body-bg-resources {
+    background-image: url('/pictures/resources.jpg');
+}
+
+.body-bg-categories {
+    background-image: url('/pictures/categories.jpg');
+}
+
+.body-bg-notifications {
+    background-image: url('/pictures/notifications.jpg');
+}
+
+.body-bg-statistics {
+    background-image: url('/pictures/statistics.jpg');
+}
+
+.body-bg-users {
+    background-image: url('/pictures/users.jpg');
+}
+
+/* Common background styles */
+body[class*="body-bg-"] {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed; /* Keeps the background fixed during scroll */
+    min-height: 100vh; /* Ensure body takes at least full viewport height */
+}
+
+/* Adjust container opacity for better readability over background images */
+body[class*="body-bg-"] .container {
+    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
