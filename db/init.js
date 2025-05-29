@@ -60,6 +60,7 @@ async function initializeDatabase() {
         low_stock_threshold INTEGER DEFAULT 0,
         category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        expiration_date DATE DEFAULT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
@@ -70,6 +71,13 @@ async function initializeDatabase() {
       console.log("Column user_id ensured in resources table.");
     } catch (e) {
       console.warn("Could not add/verify user_id column in resources table:", e.message);
+    }
+
+    try {
+      await pool.query('ALTER TABLE resources ADD COLUMN IF NOT EXISTS expiration_date DATE DEFAULT NULL;');
+      console.log("Column expiration_date ensured in resources table.");
+    } catch (e) {
+      console.warn("Could not add/verify expiration_date column in resources table:", e.message);
     }
 
     try {

@@ -74,18 +74,42 @@ async function handleUsers(req, res) {
       return true;
     }
     try {
+      // Start a transaction
+      await pool.query('BEGIN');
+
+      // Get the group_id before updating the user
+      const userGroupQuery = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
+      const groupId = userGroupQuery.rows[0]?.group_id;
+
       const result = await pool.query(
         'UPDATE users SET group_id = NULL WHERE id = $1 RETURNING id, username, group_id',
         [userId]
       );
+
       if (result.rowCount === 0) {
+        await pool.query('ROLLBACK');
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'User not found or already not in a group.' }));
-      } else {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Successfully exited group.', user: result.rows[0] }));
+        return true;
       }
+
+      // Check if the group needs to be deleted
+      if (groupId) {
+        const groupMembersQuery = await pool.query('SELECT COUNT(*) AS member_count FROM users WHERE group_id = $1', [groupId]);
+        const memberCount = parseInt(groupMembersQuery.rows[0].member_count, 10);
+
+        if (memberCount === 0) {
+          await pool.query('DELETE FROM groups WHERE id = $1', [groupId]);
+          console.log(`Group ${groupId} deleted as it has no more members.`);
+        }
+      }
+
+      await pool.query('COMMIT');
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Successfully exited group.', user: result.rows[0] }));
     } catch (dbErr) {
+      await pool.query('ROLLBACK');
       console.error('DB Error on PUT /api/users/me/exit-group:', dbErr);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Database error exiting group.' }));

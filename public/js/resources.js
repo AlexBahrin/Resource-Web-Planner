@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const resourceQuantityInput = document.getElementById('resource-quantity');
   const resourceDescriptionInput = document.getElementById('resource-description');
   const lowStockThresholdInput = document.getElementById('low-stock-threshold');
+  const resourceExpirationDateInput = document.getElementById('resource-expiration-date');
   const editResourceIdInput = document.getElementById('edit-resource-id');
   const formSubmitButton = addResourceForm.querySelector('button[type="submit"]');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
@@ -69,11 +70,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         let html = '<table class="data-table">';
-        html += '<thead><tr><th>Name</th><th>Category</th><th>Quantity</th><th>Description</th><th>Low Stock Threshold</th><th>Actions</th></tr></thead>';
+        html += '<thead><tr><th>Name</th><th>Category</th><th>Quantity</th><th>Description</th><th>Low Stock Threshold</th><th>Expiration Date</th><th>Actions</th></tr></thead>';
         html += '<tbody>';
         resources.forEach(resource => {
           const categoryDisplay = resource.category_id 
             ? `${resource.category_name || 'Unknown Category'} (ID: ${resource.category_id})` 
+            : 'N/A';
+          const expirationDateDisplay = resource.expiration_date 
+            ? new Date(resource.expiration_date).toLocaleDateString() 
             : 'N/A';
           html += `<tr>
             <td>${resource.name}</td>
@@ -81,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${resource.quantity === null || resource.quantity === undefined ? 0 : resource.quantity}</td>
             <td>${resource.description || ''}</td>
             <td>${resource.low_stock_threshold === null || resource.low_stock_threshold === undefined ? 'N/A' : resource.low_stock_threshold}</td>
+            <td>${expirationDateDisplay}</td>
             <td>
               <button class="edit-btn" data-id="${resource.id}">Modify</button>
               <button class="delete-btn" data-id="${resource.id}" data-name="${resource.name}">Delete</button>
@@ -144,6 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantity = parseInt(resourceQuantityInput.value, 10);
     const description = resourceDescriptionInput.value.trim();
     const lowStockThreshold = parseInt(lowStockThresholdInput.value, 10);
+    const expirationDate = resourceExpirationDateInput.value.trim(); // Get expiration date
     const resourceId = editResourceIdInput.value;
 
     if (!resourceName || !categoryId) {
@@ -164,19 +170,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const method = resourceId ? 'PUT' : 'POST';
     const endpoint = resourceId ? `/api/resources/${resourceId}` : '/api/resources';
 
+    let body = {
+      name: resourceName,
+      category_id: parseInt(categoryId, 10),
+      quantity: quantity,
+      description: description,
+      low_stock_threshold: lowStockThreshold
+    };
+
+    if (expirationDate) {
+      body.expiration_date = expirationDate;
+    } else {
+      body.expiration_date = null; // Send null if empty to clear it
+    }
+
     try {
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: resourceName,
-          category_id: parseInt(categoryId, 10),
-          quantity: quantity,
-          description: description,
-          low_stock_threshold: lowStockThreshold
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -209,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resourceQuantityInput.value = resource.quantity;
     resourceDescriptionInput.value = resource.description || '';
     lowStockThresholdInput.value = resource.low_stock_threshold === null || resource.low_stock_threshold === undefined ? '' : resource.low_stock_threshold;
+    resourceExpirationDateInput.value = resource.expiration_date ? new Date(resource.expiration_date).toISOString().split('T')[0] : ''; // Set expiration date for editing
     formSubmitButton.textContent = 'Update Resource';
     cancelEditBtn.style.display = 'inline-block';
     window.scrollTo({ top: addResourceForm.offsetTop - 20, behavior: 'smooth' });
@@ -218,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addResourceForm.reset();
     editResourceIdInput.value = '';
     resourceCategorySelect.value = '';
+    resourceExpirationDateInput.value = ''; // Reset expiration date input
     formSubmitButton.textContent = 'Add Resource';
     cancelEditBtn.style.display = 'none';
   }

@@ -3,6 +3,11 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const pool = require('./config/dbConfig');
+
+// Configure pg to parse DATE columns as YYYY-MM-DD strings
+const { types } = require('pg');
+types.setTypeParser(types.builtins.DATE, val => val);
+
 const { initializeDatabase } = require('./db/init');
 const { handleLogin, handleRegister, handleDashboard, handleLogout, sessions } = require('./routes/auth');
 const { handleCategories } = require('./routes/categories');
@@ -12,10 +17,28 @@ const { handleNotifications } = require('./routes/notifications');
 const { handleGroups } = require('./routes/groups');
 const { handleStatistics } = require('./routes/statistics');
 const { serveResourcesPage, serveUsersPage, serveNotificationsPage, serveStatisticsPage } = require('./routes/pages');
+const { startExpirationChecker } = require('./tasks/expirationChecker'); // Added import
+const { startLowStockChecker } = require('./tasks/lowStockChecker'); // Added import
 
 const port = 8087;
 
-initializeDatabase().catch(console.error);
+initializeDatabase()
+    .then(() => {
+        console.log('Database initialized successfully.');
+        // Start the expiration checker after database is initialized
+        startExpirationChecker(60 * 24); // Run once a day
+        // Or for testing, run more frequently, e.g., every 1 minute:
+        // startExpirationChecker(1);
+
+        // Start the low stock checker after database is initialized
+        startLowStockChecker(60 * 24); // Run once a day (every 24 hours)
+        // Or for testing, run more frequently, e.g., every 1 minute:
+        // startLowStockChecker(1);
+    })
+    .catch(err => {
+        console.error('Failed to initialize database or start tasks:', err);
+        process.exit(1); // Exit if DB init fails
+    });
 
 function serveStaticFile(req, res, filePath) {
   fs.readFile(filePath, (err, data) => {
@@ -164,7 +187,7 @@ const server = http.createServer(async (req, res) => {
       } else if (pathname.startsWith('/api/notifications')) {
         handled = await handleNotifications(req, res);
       } else if (pathname.startsWith('/api/groups')) {
-        handled = await handleGroups(req, res);
+        handled = await handleGroups(req, res, pool); // Pass the pool object here
       } else if (pathname.startsWith('/api/statistics')) {
         handled = await handleStatistics(req, res);
       }

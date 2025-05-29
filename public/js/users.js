@@ -57,17 +57,44 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateGroupUI(user) {
     const groupStatusContainer = document.getElementById('group-status-container');
     const groupActionsContainer = document.getElementById('group-actions-container');
+    const groupDetailsContainer = document.getElementById('group-details-container'); // Added for group details
 
-    if (!groupStatusContainer || !groupActionsContainer) {
-      console.error('Group UI containers not found in the HTML.');
+    if (!groupStatusContainer || !groupActionsContainer || !groupDetailsContainer) {
+      console.error('Required group UI containers not found in the HTML.');
       return;
     }
 
     groupStatusContainer.innerHTML = '';
     groupActionsContainer.innerHTML = '';
+    groupDetailsContainer.innerHTML = ''; // Clear previous details
 
     if (user.group_id) {
-      groupStatusContainer.textContent = `You are in group ID: ${user.group_id}.`;
+      // Fetch and display group details
+      fetch(`/api/groups/${user.group_id}`)
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to fetch group details');
+          return response.json();
+        })
+        .then(group => {
+          groupStatusContainer.textContent = `You are in group:`;
+          let membersHtml = '<ul>';
+          group.members.forEach(member => {
+            membersHtml += `<li>${member}</li>`;
+          });
+          membersHtml += '</ul>';
+          groupDetailsContainer.innerHTML = `
+            <p><strong>Group ID:</strong> ${group.id}</p>
+            <p><strong>Group Name:</strong> ${group.name}</p>
+            <p><strong>Members:</strong></p>
+            ${membersHtml}
+          `;
+        })
+        .catch(error => {
+          console.error('Error fetching group details:', error);
+          groupDetailsContainer.innerHTML = '<p>Could not load group details.</p>';
+          // Still show basic status if details fail
+          groupStatusContainer.textContent = `You are in group ID: ${user.group_id}. Details unavailable.`;
+        });
 
       const exitButton = document.createElement('button');
       exitButton.textContent = 'Exit Group';
@@ -112,8 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const newGroup = await response.json();
-      alert(`Group "${newGroup.name}" (ID: ${newGroup.id}) created successfully! You can now join this group using its ID.`);
-      fetchCurrentUser();
+      alert(`Group "${newGroup.name}" (ID: ${newGroup.id}) created successfully! Others can now join this group using its ID.`);
+      fetchCurrentUser(); // This will refresh the user and group UI
     } catch (error) {
       console.error('Failed to create group:', error);
       alert(`Error creating group: ${error.message}`);

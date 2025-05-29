@@ -14,28 +14,39 @@ async function handleStatistics(req, res) {
     }
     
     try {
-      // Query 1: Get total count of resources by category
+      // Query 0: Get current user's group_id
+      const userGroupRes = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
+      const groupId = userGroupRes.rows.length > 0 ? userGroupRes.rows[0].group_id : null;
+
+      let targetUserIds = [userId]; // Default to only the current user
+      if (groupId) {
+        // If in a group, get all user IDs from that group
+        const groupMembersRes = await pool.query('SELECT id FROM users WHERE group_id = $1', [groupId]);
+        targetUserIds = groupMembersRes.rows.map(row => row.id);
+      }
+
+      // Query 1: Get total count of resources by category for target users
       const categoryQuery = `
         SELECT c.id, c.name, COUNT(r.id) as resource_count
         FROM categories c
-        LEFT JOIN resources r ON c.id = r.category_id AND r.user_id = $1
-        WHERE c.user_id = $1 OR c.user_id IS NULL
+        LEFT JOIN resources r ON c.id = r.category_id AND r.user_id = ANY($1::int[])
+        WHERE c.user_id = ANY($1::int[]) OR c.user_id IS NULL
         GROUP BY c.id, c.name
         ORDER BY c.name
       `;
-      const categoryResult = await pool.query(categoryQuery, [userId]);
+      const categoryResult = await pool.query(categoryQuery, [targetUserIds]);
       
-      // Query 2: Get stock status statistics
+      // Query 2: Get stock status statistics for target users
       const stockQuery = `
         SELECT 
           COUNT(*) FILTER (WHERE quantity <= low_stock_threshold) as low_stock_count,
           COUNT(*) FILTER (WHERE quantity > low_stock_threshold) as normal_stock_count
         FROM resources
-        WHERE user_id = $1
+        WHERE user_id = ANY($1::int[])
       `;
-      const stockResult = await pool.query(stockQuery, [userId]);
+      const stockResult = await pool.query(stockQuery, [targetUserIds]);
       
-      // Query 3: Get quantity distribution
+      // Query 3: Get quantity distribution for target users
       const quantityQuery = `
         SELECT 
           COUNT(*) FILTER (WHERE quantity = 0) as zero_count,
@@ -45,9 +56,9 @@ async function handleStatistics(req, res) {
           COUNT(*) FILTER (WHERE quantity BETWEEN 101 AND 500) as hundred_one_to_five_hundred_count,
           COUNT(*) FILTER (WHERE quantity > 500) as over_five_hundred_count
         FROM resources
-        WHERE user_id = $1
+        WHERE user_id = ANY($1::int[])
       `;
-      const quantityResult = await pool.query(quantityQuery, [userId]);
+      const quantityResult = await pool.query(quantityQuery, [targetUserIds]);
       
       // Return combined statistics
       res.writeHead(200, { 'Content-Type': 'application/json' });

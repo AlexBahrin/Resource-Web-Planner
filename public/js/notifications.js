@@ -86,8 +86,8 @@ document.addEventListener('DOMContentLoaded', function() {
           markReadButton.remove();
         }
       }
-      // Optionally, re-fetch or update UI more comprehensively
-      // fetchNotifications(); // Or update just this item
+      // Re-fetch notifications to update the list based on the current view
+      fetchNotifications();
     })
     .catch(error => {
       console.error('Error marking notification as read:', error);
