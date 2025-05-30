@@ -17,7 +17,7 @@ async function handleCategories(req, res) {
                     return reject(new Error("Headers already sent when GET /api/categories callback began."));
                 }
                 try {
-                    const result = await pool.query('SELECT id, name FROM categories ORDER BY name');
+                    const result = await pool.query('SELECT id, name, enable_quantity, enable_low_stock_threshold, enable_expiration_date FROM categories ORDER BY name');
                     
                     if (res.headersSent) {
                         console.error(`[DEBUG /api/categories GET] Headers were sent after pool.query but before res.writeHead(200). req.url: ${req.url}. Bailing out.`);
@@ -48,7 +48,7 @@ async function handleCategories(req, res) {
                     if (params === null) { 
                         return resolve(); 
                     }
-                    const { name } = params;
+                    const { name, enable_quantity, enable_low_stock_threshold, enable_expiration_date } = params;
                     if (!name || name.trim() === '') {
                         if (!res.headersSent) {
                             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -58,8 +58,8 @@ async function handleCategories(req, res) {
                     }
                     try {
                         const result = await pool.query(
-                            'INSERT INTO categories (name) VALUES ($1) RETURNING id, name',
-                            [name.trim()]
+                            'INSERT INTO categories (name, enable_quantity, enable_low_stock_threshold, enable_expiration_date) VALUES ($1, $2, $3, $4) RETURNING id, name, enable_quantity, enable_low_stock_threshold, enable_expiration_date',
+                            [name.trim(), !!enable_quantity, !!enable_low_stock_threshold, !!enable_expiration_date]
                         );
                         if (!res.headersSent) {
                             res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -110,7 +110,7 @@ async function handleCategories(req, res) {
                     if (params === null) { 
                         return resolve(); 
                     }
-                    const { name } = params;
+                    const { name, enable_quantity, enable_low_stock_threshold, enable_expiration_date } = params;
                     if (!name || name.trim() === '') {
                         if (!res.headersSent) {
                             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -120,8 +120,8 @@ async function handleCategories(req, res) {
                     }
                     try {
                         const result = await pool.query(
-                            'UPDATE categories SET name = $1 WHERE id = $2 RETURNING id, name',
-                            [name.trim(), parseInt(categoryId)]
+                            'UPDATE categories SET name = $1, enable_quantity = $2, enable_low_stock_threshold = $3, enable_expiration_date = $4 WHERE id = $5 RETURNING id, name, enable_quantity, enable_low_stock_threshold, enable_expiration_date',
+                            [name.trim(), !!enable_quantity, !!enable_low_stock_threshold, !!enable_expiration_date, parseInt(categoryId)]
                         );
                         if (result.rowCount === 0) {
                             if (!res.headersSent) {

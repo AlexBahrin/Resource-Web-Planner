@@ -5,6 +5,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const editCategoryIdInput = document.getElementById('edit-category-id');
     const formSubmitButton = addCategoryForm.querySelector('button[type="submit"]');
     const cancelEditBtn = document.getElementById('cancel-edit-category-btn');
+    const enableQuantityCheckbox = document.getElementById('enable-quantity');
+    const enableLowStockCheckbox = document.getElementById('enable-low-stock-threshold');
+    const enableExpirationDateCheckbox = document.getElementById('enable-expiration-date');
+
+    if (enableLowStockCheckbox) {
+        enableLowStockCheckbox.addEventListener('change', () => {
+            if (enableLowStockCheckbox.checked) {
+                enableQuantityCheckbox.checked = true;
+            }
+        });
+    }
+
+    if (enableQuantityCheckbox) {
+        enableQuantityCheckbox.addEventListener('change', () => {
+            if (!enableQuantityCheckbox.checked) {
+                enableLowStockCheckbox.checked = false;
+            }
+        });
+    }
 
     async function fetchCategories() {
         try {
@@ -27,14 +46,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         let html = '<table class="data-table">';
-        html += '<thead><tr><th>Name</th><th>ID</th><th>Actions</th></tr></thead>';
+        html += '<thead><tr><th>Name</th><th>ID</th><th>Qty Enabled</th><th>Low Stock Enabled</th><th>Expiry Enabled</th><th>Actions</th></tr></thead>';
         html += '<tbody>';
         categories.forEach(category => {
             html += `<tr>
                 <td>${category.name}</td>
                 <td>${category.id}</td>
+                <td>${category.enable_quantity ? 'Yes' : 'No'}</td>
+                <td>${category.enable_low_stock_threshold ? 'Yes' : 'No'}</td>
+                <td>${category.enable_expiration_date ? 'Yes' : 'No'}</td>
                 <td>
-                    <button class="edit-btn" data-id="${category.id}" data-name="${category.name}">Modify</button>
+                    <button class="edit-btn" data-id="${category.id}" data-name="${category.name}" data-enable_quantity="${category.enable_quantity}" data-enable_low_stock_threshold="${category.enable_low_stock_threshold}" data-enable_expiration_date="${category.enable_expiration_date}">Modify</button>
                     <button class="delete-btn" data-id="${category.id}" data-name="${category.name}">Delete</button>
                 </td>
             </tr>`;
@@ -46,7 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', (event) => {
                 const categoryId = event.target.dataset.id;
                 const categoryName = event.target.dataset.name;
-                populateFormForEdit({id: categoryId, name: categoryName});
+                const enableQuantity = event.target.dataset.enable_quantity === 'true';
+                const enableLowStockThreshold = event.target.dataset.enable_low_stock_threshold === 'true';
+                const enableExpirationDate = event.target.dataset.enable_expiration_date === 'true';
+                populateFormForEdit({
+                    id: categoryId, 
+                    name: categoryName, 
+                    enable_quantity: enableQuantity,
+                    enable_low_stock_threshold: enableLowStockThreshold,
+                    enable_expiration_date: enableExpirationDate
+                });
             });
         });
 
@@ -62,6 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateFormForEdit(category) {
         editCategoryIdInput.value = category.id;
         categoryNameInput.value = category.name;
+        enableQuantityCheckbox.checked = category.enable_quantity;
+        enableLowStockCheckbox.checked = category.enable_low_stock_threshold;
+        enableExpirationDateCheckbox.checked = category.enable_expiration_date;
         formSubmitButton.textContent = 'Update Category';
         cancelEditBtn.style.display = 'inline-block';
         window.scrollTo({top: addCategoryForm.offsetTop - 20, behavior: 'smooth'});
@@ -70,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetForm() {
         addCategoryForm.reset();
         editCategoryIdInput.value = '';
+        enableQuantityCheckbox.checked = true; 
+        enableLowStockCheckbox.checked = true;
+        enableExpirationDateCheckbox.checked = true;
         formSubmitButton.textContent = 'Add Category';
         cancelEditBtn.style.display = 'none';
     }
@@ -78,6 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const categoryName = categoryNameInput.value.trim();
         const categoryId = editCategoryIdInput.value;
+        const enableQuantity = enableQuantityCheckbox.checked;
+        const enableLowStockThreshold = enableLowStockCheckbox.checked;
+        const enableExpirationDate = enableExpirationDateCheckbox.checked;
 
         if (!categoryName) {
             alert('Category name cannot be empty.');
@@ -93,7 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({name: categoryName}),
+                body: JSON.stringify({
+                    name: categoryName,
+                    enable_quantity: enableQuantity,
+                    enable_low_stock_threshold: enableLowStockThreshold,
+                    enable_expiration_date: enableExpirationDate
+                }),
             });
 
             if (!response.ok) {

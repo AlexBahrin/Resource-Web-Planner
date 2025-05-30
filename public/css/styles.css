@@ -201,18 +201,41 @@ li:hover {
     margin-bottom: 15px;
 }
 
-#add-category-form .form-group label {
-    display: block;
-    margin-bottom: 5px;
+/* Styles for aligning checkbox and label horizontally */
+.checkbox-container {
+    display: flex;
+    align-items: baseline; /* Align items along their baseline */
+    margin-bottom: 10px; /* Space between checkbox groups */
+}
+
+.checkbox-container input[type="checkbox"] {
+    display: inline-block;
+    width: auto;
+    margin: 0 8px 0 0; /* top, right, bottom, left */
+    padding: 0;
+    flex-shrink: 0; /* Prevent checkbox from shrinking */
+}
+
+.checkbox-container label {
+    margin: 0;
+    padding: 0;
+    line-height: 1; /* Keep this for consistent label height */
+}
+
+/* Specific adjustments for category form if needed */
+#add-category-form fieldset.form-group {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+#add-category-form fieldset.form-group legend {
+    padding: 0 10px;
     font-weight: bold;
-    font-size: 0.9em;
     color: #555;
 }
 
-#add-category-form .form-group input[type="text"] {
-    box-sizing: border-box;
-    width: 100%;
-}
 
 #add-category-form .form-buttons {
     display: flex;

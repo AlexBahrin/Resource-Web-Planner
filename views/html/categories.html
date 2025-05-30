@@ -18,6 +18,21 @@
                     <label for="category-name">Category Name:</label>
                     <input type="text" id="category-name" name="categoryName" required>
                 </div>
+                <fieldset class="form-group">
+                    <legend>Resource Field Settings:</legend>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="enable-quantity" name="enable_quantity" checked>
+                        <label for="enable-quantity">Enable Quantity Field</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="enable-low-stock-threshold" name="enable_low_stock_threshold" checked>
+                        <label for="enable-low-stock-threshold">Enable Low Stock Threshold Field</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="enable-expiration-date" name="enable_expiration_date" checked>
+                        <label for="enable-expiration-date">Enable Expiration/Inspection Date Field</label>
+                    </div>
+                </fieldset>
                 <div class="form-buttons">
                     <button type="submit" class="add-btn">Add Category</button>
                     <button type="button" id="cancel-edit-category-btn" class="cancel-btn" style="display: none;">Cancel</button>

@@ -4,14 +4,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const resourceNameInput = document.getElementById('resource-name');
   const resourceCategorySelect = document.getElementById('resource-category');
   const resourceQuantityInput = document.getElementById('resource-quantity');
+  const resourceQuantityLabel = document.querySelector('label[for="resource-quantity"]');
   const resourceDescriptionInput = document.getElementById('resource-description');
   const lowStockThresholdInput = document.getElementById('low-stock-threshold');
+  const lowStockThresholdLabel = document.querySelector('label[for="low-stock-threshold"]');
   const resourceExpirationDateInput = document.getElementById('resource-expiration-date');
+  const resourceExpirationDateLabel = document.querySelector('label[for="resource-expiration-date"]');
   const editResourceIdInput = document.getElementById('edit-resource-id');
   const formSubmitButton = addResourceForm.querySelector('button[type="submit"]');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
   let originalResources = [];
+  let allCategories = [];
   let currentSortState = { column: null, direction: 'none' };
 
   function showToast(message, type = 'info', duration = 3000) {
@@ -118,15 +122,27 @@ document.addEventListener('DOMContentLoaded', function() {
     html += '<tbody>';
     resourcesToDisplay.forEach(resource => {
       const categoryDisplay = resource.category_name || 'N/A';
-      const expirationDateDisplay = resource.expiration_date
-        ? new Date(resource.expiration_date).toLocaleDateString()
-        : 'N/A';
+      
+      const quantityValue = resource.quantity !== null && resource.quantity !== undefined ? parseFloat(resource.quantity) : 0;
+      const quantityDisplay = resource.enable_quantity 
+        ? quantityValue.toString()
+        : '';
+
+      const lowStockThresholdValue = resource.low_stock_threshold !== null && resource.low_stock_threshold !== undefined ? parseFloat(resource.low_stock_threshold) : 0;
+      const lowStockThresholdDisplay = resource.enable_low_stock_threshold 
+        ? lowStockThresholdValue.toString()
+        : '';
+
+      const expirationDateDisplay = resource.enable_expiration_date
+        ? (resource.expiration_date ? new Date(resource.expiration_date).toLocaleDateString() : 'N/A')
+        : '';
+
       html += `<tr>
             <td>${resource.name || ''}</td>
             <td>${categoryDisplay}</td>
-            <td>${resource.quantity === null || resource.quantity === undefined ? 0 : resource.quantity}</td>
+            <td>${quantityDisplay}</td>
             <td>${resource.description || ''}</td>
-            <td>${resource.low_stock_threshold === null || resource.low_stock_threshold === undefined ? 'N/A' : resource.low_stock_threshold}</td>
+            <td>${lowStockThresholdDisplay}</td>
             <td>${expirationDateDisplay}</td>
             <td>
               <button class="edit-btn" data-id="${resource.id}">Modify</button>
@@ -219,11 +235,15 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const categories = await response.json();
+      allCategories = categories;
       resourceCategorySelect.innerHTML = '<option value="">Select a category</option>';
       categories.forEach(category => {
         const option = document.createElement('option');
         option.value = category.id;
         option.textContent = category.name;
+        option.dataset.enableQuantity = category.enable_quantity;
+        option.dataset.enableLowStockThreshold = category.enable_low_stock_threshold;
+        option.dataset.enableExpirationDate = category.enable_expiration_date;
         resourceCategorySelect.appendChild(option);
       });
     } catch (error) {
@@ -233,14 +253,66 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  function updateFormFieldsBasedOnCategory(categoryId) {
+    const selectedCategory = allCategories.find(cat => cat.id.toString() === categoryId);
+
+    if (selectedCategory) {
+      if (selectedCategory.enable_quantity) {
+        resourceQuantityInput.disabled = false;
+        resourceQuantityInput.style.display = '';
+        if (resourceQuantityLabel) resourceQuantityLabel.style.display = '';
+      } else {
+        resourceQuantityInput.disabled = true;
+        resourceQuantityInput.value = '0';
+        resourceQuantityInput.style.display = 'none';
+        if (resourceQuantityLabel) resourceQuantityLabel.style.display = 'none';
+      }
+
+      if (selectedCategory.enable_low_stock_threshold) {
+        lowStockThresholdInput.disabled = false;
+        lowStockThresholdInput.style.display = '';
+        if (lowStockThresholdLabel) lowStockThresholdLabel.style.display = '';
+      } else {
+        lowStockThresholdInput.disabled = true;
+        lowStockThresholdInput.value = '0';
+        lowStockThresholdInput.style.display = 'none';
+        if (lowStockThresholdLabel) lowStockThresholdLabel.style.display = 'none';
+      }
+
+      if (selectedCategory.enable_expiration_date) {
+        resourceExpirationDateInput.disabled = false;
+        resourceExpirationDateInput.style.display = '';
+        if (resourceExpirationDateLabel) resourceExpirationDateLabel.style.display = '';
+      } else {
+        resourceExpirationDateInput.disabled = true;
+        resourceExpirationDateInput.value = '';
+        resourceExpirationDateInput.style.display = 'none';
+        if (resourceExpirationDateLabel) resourceExpirationDateLabel.style.display = 'none';
+      }
+    } else {
+      resourceQuantityInput.disabled = false;
+      resourceQuantityInput.style.display = '';
+      if (resourceQuantityLabel) resourceQuantityLabel.style.display = '';
+      lowStockThresholdInput.disabled = false;
+      lowStockThresholdInput.style.display = '';
+      if (lowStockThresholdLabel) lowStockThresholdLabel.style.display = '';
+      resourceExpirationDateInput.disabled = false;
+      resourceExpirationDateInput.style.display = '';
+      if (resourceExpirationDateLabel) resourceExpirationDateLabel.style.display = '';
+    }
+  }
+
+  if (resourceCategorySelect) {
+    resourceCategorySelect.addEventListener('change', function() {
+      updateFormFieldsBasedOnCategory(this.value);
+    });
+  }
+
   async function addOrUpdateResource(event) {
     event.preventDefault();
     const resourceName = resourceNameInput.value.trim();
     const categoryId = resourceCategorySelect.value;
-    const quantity = parseInt(resourceQuantityInput.value, 10);
-    const description = resourceDescriptionInput.value.trim();
-    const lowStockThreshold = parseInt(lowStockThresholdInput.value, 10);
-    const expirationDate = resourceExpirationDateInput.value.trim();
+    const selectedCategoryOption = resourceCategorySelect.options[resourceCategorySelect.selectedIndex];
     const resourceId = editResourceIdInput.value;
 
     if (!resourceName || !categoryId) {
@@ -264,14 +336,52 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    if (isNaN(quantity) || quantity < 0) {
-      showToast('Please enter a valid quantity.', 'error');
-      return;
+    let quantityString = resourceQuantityInput.value.trim();
+    let lowStockThresholdString = lowStockThresholdInput.value.trim();
+    let expirationDate = resourceExpirationDateInput.value.trim();
+
+    let quantity = parseFloat(quantityString);
+    let lowStockThreshold = parseFloat(lowStockThresholdString);
+
+    const categorySettings = {
+        enable_quantity: selectedCategoryOption.dataset.enableQuantity === 'true',
+        enable_low_stock_threshold: selectedCategoryOption.dataset.enableLowStockThreshold === 'true',
+        enable_expiration_date: selectedCategoryOption.dataset.enableExpirationDate === 'true'
+    };
+
+    if (categorySettings.enable_quantity) {
+        if (quantityString === '') {
+            showToast('Quantity is required and cannot be empty.', 'error');
+            return;
+        }
+        if (isNaN(quantity) || quantity < 0) {
+            showToast('Quantity must be a valid non-negative number (e.g., 10 or 10.50).', 'error');
+            return;
+        }
+    } else {
+        quantity = 0.00;
     }
 
-    if (isNaN(lowStockThreshold) || lowStockThreshold < 0) {
-      showToast('Please enter a valid low stock threshold.', 'error');
-      return;
+    if (categorySettings.enable_low_stock_threshold) {
+        if (lowStockThresholdString === '') {
+            showToast('Low Stock Threshold is required and cannot be empty.', 'error');
+            return;
+        }
+        if (isNaN(lowStockThreshold) || lowStockThreshold < 0) {
+            showToast('Low Stock Threshold must be a valid non-negative number (e.g., 5 or 5.25).', 'error');
+            return;
+        }
+    } else {
+        lowStockThreshold = 0.00;
+    }
+
+    if (categorySettings.enable_expiration_date) {
+        if (!expirationDate) {
+            showToast('Expiration Date is required when enabled for the category.', 'error');
+            return;
+        }
+    } else {
+        expirationDate = null;
     }
 
     const method = resourceId ? 'PUT' : 'POST';
@@ -280,15 +390,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let body = {
       name: resourceName,
       category_id: parseInt(categoryId, 10),
-      quantity: quantity,
-      description: description,
-      low_stock_threshold: lowStockThreshold
+      description: resourceDescriptionInput.value.trim(),
     };
 
-    if (expirationDate) {
-      body.expiration_date = expirationDate;
+    if (categorySettings.enable_quantity) {
+        body.quantity = quantity;
+    }
+    if (categorySettings.enable_low_stock_threshold) {
+        body.low_stock_threshold = lowStockThreshold;
+    }
+    if (categorySettings.enable_expiration_date) {
+        body.expiration_date = expirationDate;
     } else {
-      body.expiration_date = null;
+        body.expiration_date = null;
     }
 
     try {
@@ -327,10 +441,22 @@ document.addEventListener('DOMContentLoaded', function() {
     editResourceIdInput.value = resource.id;
     resourceNameInput.value = resource.name;
     resourceCategorySelect.value = resource.category_id;
-    resourceQuantityInput.value = resource.quantity;
+    
+    updateFormFieldsBasedOnCategory(resource.category_id.toString());
+
+    if (!resourceQuantityInput.disabled) {
+        const quantityValue = resource.quantity !== null && resource.quantity !== undefined ? parseFloat(resource.quantity) : 0;
+        resourceQuantityInput.value = quantityValue.toString();
+    }
     resourceDescriptionInput.value = resource.description || '';
-    lowStockThresholdInput.value = resource.low_stock_threshold === null || resource.low_stock_threshold === undefined ? '' : resource.low_stock_threshold;
-    resourceExpirationDateInput.value = resource.expiration_date ? new Date(resource.expiration_date).toISOString().split('T')[0] : '';
+    if (!lowStockThresholdInput.disabled) {
+        const lowStockValue = resource.low_stock_threshold !== null && resource.low_stock_threshold !== undefined ? parseFloat(resource.low_stock_threshold) : 0;
+        lowStockThresholdInput.value = lowStockValue.toString();
+    }
+    if (!resourceExpirationDateInput.disabled) {
+        resourceExpirationDateInput.value = resource.expiration_date ? new Date(resource.expiration_date).toISOString().split('T')[0] : '';
+    }
+    
     formSubmitButton.textContent = 'Update Resource';
     cancelEditBtn.style.display = 'inline-block';
     window.scrollTo({ top: addResourceForm.offsetTop - 20, behavior: 'smooth' });
@@ -340,6 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addResourceForm.reset();
     editResourceIdInput.value = '';
     resourceCategorySelect.value = '';
+    updateFormFieldsBasedOnCategory('');
     resourceExpirationDateInput.value = '';
     formSubmitButton.textContent = 'Add Resource';
     cancelEditBtn.style.display = 'none';
@@ -531,17 +658,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
+  fetchResources();
+  fetchCategoriesForDropdown();
+  setupImportExportButtons();
+
   if (addResourceForm) {
     addResourceForm.addEventListener('submit', addOrUpdateResource);
   }
-
   if (cancelEditBtn) {
-    cancelEditBtn.addEventListener('click', function() {
-      resetForm();
-    });
+    cancelEditBtn.addEventListener('click', resetForm);
   }
-
-  fetchCategoriesForDropdown();
-  fetchResources();
-  setupImportExportButtons();
 });
