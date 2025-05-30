@@ -248,6 +248,22 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    const existingResourceByName = originalResources.find(
+      r => r.name.toLowerCase() === resourceName.toLowerCase()
+    );
+
+    if (resourceId) { 
+      if (existingResourceByName && existingResourceByName.id.toString() !== resourceId) {
+        showToast('Another resource with this name already exists.', 'error');
+        return;
+      }
+    } else { 
+      if (existingResourceByName) {
+        showToast('A resource with this name already exists. Please use a different name.', 'error');
+        return;
+      }
+    }
+
     if (isNaN(quantity) || quantity < 0) {
       showToast('Please enter a valid quantity.', 'error');
       return;

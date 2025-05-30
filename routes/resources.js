@@ -383,19 +383,34 @@ async function handleResources(req, res) {
               continue;
             }
 
-            if (id) {
-              const resourceCheck = await pool.query(
+            const existingResourceByName = await pool.query(
+              'SELECT id, quantity FROM resources WHERE name = $1 AND user_id = $2',
+              [name.trim(), userId]
+            );
+
+            if (id) { 
+              const resourceCheckById = await pool.query(
                 'SELECT id FROM resources WHERE id = $1 AND user_id = $2',
                 [id, userId]
               );
               
-              if (resourceCheck.rows.length === 0) {
-                const insertResult = await pool.query(
-                  'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold, user_id, expiration_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-                  [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold, userId, parsedExpirationDate]
-                );
-                console.log(`[IMPORT DEBUG] Created new resource '${name}' with ID ${insertResult.rows[0].id}`);
-              } else {
+              if (resourceCheckById.rows.length === 0) {
+                if (existingResourceByName.rows.length > 0) {
+                  const existing = existingResourceByName.rows[0];
+                  const newQuantity = existing.quantity + parsedQuantity;
+                  await pool.query(
+                    'UPDATE resources SET quantity = $1 WHERE id = $2 AND user_id = $3',
+                    [newQuantity, existing.id, userId]
+                  );
+                  console.log(`[IMPORT DEBUG] Added quantity to existing resource '${name}' (ID: ${existing.id}), new quantity: ${newQuantity}`);
+                } else {
+                  const insertResult = await pool.query(
+                    'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold, user_id, expiration_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+                    [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold, userId, parsedExpirationDate]
+                  );
+                  console.log(`[IMPORT DEBUG] Created new resource '${name}' with ID ${insertResult.rows[0].id} (original ID ${id} not found for user)`);
+                }
+              } else { 
                 await pool.query(
                   'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5, expiration_date = $6 WHERE id = $7 AND user_id = $8',
                   [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold, parsedExpirationDate, id, userId]
@@ -403,11 +418,21 @@ async function handleResources(req, res) {
                 console.log(`[IMPORT DEBUG] Updated resource '${name}' (ID: ${id})`);
               }
             } else {
-              const insertResult = await pool.query(
-                'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold, user_id, expiration_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-                [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold, userId, parsedExpirationDate]
-              );
-              console.log(`[IMPORT DEBUG] Created new resource '${name}' with ID ${insertResult.rows[0].id}`);
+              if (existingResourceByName.rows.length > 0) {
+                const existing = existingResourceByName.rows[0];
+                const newQuantity = existing.quantity + parsedQuantity;
+                await pool.query(
+                  'UPDATE resources SET quantity = $1 WHERE id = $2 AND user_id = $3',
+                  [newQuantity, existing.id, userId]
+                );
+                console.log(`[IMPORT DEBUG] Added quantity to existing resource '${name}' (ID: ${existing.id}), new quantity: ${newQuantity}`);
+              } else {
+                const insertResult = await pool.query(
+                  'INSERT INTO resources (name, category_id, quantity, description, low_stock_threshold, user_id, expiration_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+                  [name.trim(), parsedCategoryId, parsedQuantity, description ? description.trim() : null, parsedLowStockThreshold, userId, parsedExpirationDate]
+                );
+                console.log(`[IMPORT DEBUG] Created new resource '${name}' with ID ${insertResult.rows[0].id}`);
+              }
             }
             
             results.Succeeded++;
@@ -470,6 +495,24 @@ async function handleResources(req, res) {
       res.end(JSON.stringify({ error: 'Resource name is required and must be a non-empty string.' }));
       return true; 
     }
+
+    try {
+      const existingResource = await pool.query(
+        'SELECT id FROM resources WHERE name = $1 AND user_id = $2',
+        [name.trim(), userId]
+      );
+      if (existingResource.rows.length > 0) {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'A resource with this name already exists.' }));
+        return true;
+      }
+    } catch (dbErr) {
+      console.error('DB Error on POST /api/resources (checking existing name):', dbErr.stack);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Database error while checking resource name.', details: dbErr.message }));
+      return true;
+    }
+
     const parsedCategoryId = parseInt(category_id, 10);
     if (isNaN(parsedCategoryId) || parsedCategoryId <= 0) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -643,127 +686,146 @@ async function handleResources(req, res) {
   }
   
   if (path.startsWith('/api/resources/') && method === 'PUT' && path.split('/').length === 4) {
-    const id = parseInt(path.split('/')[3]);
-    if (isNaN(id)) {
+    const resourceId = parseInt(path.split('/')[3], 10);
+    if (isNaN(resourceId)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid resource ID format.' }));
+      res.end(JSON.stringify({ error: 'Invalid resource ID.' }));
       return true;
     }
-    const data = await parseJsonBody(req, res);
 
+    const data = await parseJsonBody(req, res);
     if (data === null) {
       return true;
-    }
-    if (!userId) { 
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'User not authenticated for PUT operation.' }));
-        return true;
-    }
-
-    const requestingUserGroupRes = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
-    const requestingUserGroupId = requestingUserGroupRes.rows.length > 0 ? requestingUserGroupRes.rows[0].group_id : null;
-
-    const currentResourceResult = await pool.query('SELECT r.*, u.group_id AS owner_group_id FROM resources r JOIN users u ON r.user_id = u.id WHERE r.id = $1', [id]);
-
-    if (currentResourceResult.rows.length === 0) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Resource not found to update.' }));
-      return true;
-    }
-    const originalResource = currentResourceResult.rows[0];
-    const resourceOwnerId = originalResource.user_id;
-    const resourceOwnerGroupId = originalResource.owner_group_id;
-
-    if (resourceOwnerId !== userId && !(requestingUserGroupId && resourceOwnerGroupId && requestingUserGroupId === resourceOwnerGroupId)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Forbidden: You do not have permission to modify this resource.' }));
-        return true;
     }
 
     const { name, category_id, quantity, description, low_stock_threshold, expiration_date } = data;
 
-    let parsedExpirationDate;
-    if (expiration_date === null) {
-        parsedExpirationDate = null;
-    } else if (expiration_date) {
-        const date = new Date(expiration_date);
-        if (!isNaN(date.getTime())) {
-            parsedExpirationDate = date.toISOString().split('T')[0];
-        } else {
-            parsedExpirationDate = originalResource.expiration_date; 
-            console.warn(`Invalid expiration_date format during update: ${expiration_date}. Original value retained.`);
-        }
-    } else {
-        parsedExpirationDate = originalResource.expiration_date;
+    if (!userId) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'User not authenticated.' }));
+        return true;
     }
-    
-    const q = 'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5, expiration_date = $6 WHERE id = $7 RETURNING *';
-    const result = await pool.query(q, [
-      name || originalResource.name,
-      category_id || originalResource.category_id,
-      quantity === undefined ? originalResource.quantity : quantity,
-      description || originalResource.description,
-      low_stock_threshold === undefined ? originalResource.low_stock_threshold : low_stock_threshold,
-      parsedExpirationDate,
-      id
-    ]);
 
-    if (result.rows.length === 0) {
-      res.writeHead(404, { 'Content-Type': 'application/json' }); 
-      res.end(JSON.stringify({ error: 'Resource not found or not authorized to update.' }));
-    } else {
-      const updatedResource = result.rows[0];
-      const oldQty = originalResource.quantity;
-      const newQty = updatedResource.quantity;
-      const threshold = updatedResource.low_stock_threshold;
+    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Resource name, if provided, must be a non-empty string.' }));
+      return true;
+    }
 
-      if (quantity !== undefined && newQty < threshold && newQty !== oldQty) {
-        const message = `Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`;
-        
-        const resourceOwnerId = originalResource.user_id;
-        const ownerDetailsResult = await pool.query('SELECT email, group_id FROM users WHERE id = $1', [resourceOwnerId]);
+    if (name !== undefined) {
+        try {
+            const existingResource = await pool.query(
+                'SELECT id FROM resources WHERE name = $1 AND user_id = $2 AND id != $3',
+                [name.trim(), userId, resourceId]
+            );
+            if (existingResource.rows.length > 0) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Another resource with this name already exists.' }));
+                return true;
+            }
+        } catch (dbErr) {
+            console.error('DB Error on PUT /api/resources (checking existing name):', dbErr.stack);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Database error while checking resource name.', details: dbErr.message }));
+            return true;
+        }
+    }
 
-        if (ownerDetailsResult.rows.length > 0) {
-          const owner = ownerDetailsResult.rows[0];
-          if (owner.group_id) {
-            const groupMembers = await pool.query('SELECT id, email FROM users WHERE group_id = $1', [owner.group_id]);
-            for (const member of groupMembers.rows) {
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name.trim();
+    if (category_id !== undefined) updateFields.category_id = category_id;
+    if (quantity !== undefined) updateFields.quantity = quantity;
+    if (description !== undefined) updateFields.description = description;
+    if (low_stock_threshold !== undefined) updateFields.low_stock_threshold = low_stock_threshold;
+    if (expiration_date !== undefined) updateFields.expiration_date = expiration_date;
+
+    try {
+      const resourceCheck = await pool.query(
+        'SELECT id FROM resources WHERE id = $1 AND user_id = $2',
+        [resourceId, userId]
+      );
+      
+      if (resourceCheck.rows.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Resource not found or not authorized to update.' }));
+        return true;
+      }
+
+      const result = await pool.query(
+        'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5, expiration_date = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
+        [
+          updateFields.name || null,
+          updateFields.category_id || null,
+          updateFields.quantity || null,
+          updateFields.description || null,
+          updateFields.low_stock_threshold || null,
+          updateFields.expiration_date || null,
+          resourceId,
+          userId
+        ]
+      );
+
+      if (result.rows.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' }); 
+        res.end(JSON.stringify({ error: 'Resource not found or not authorized to update.' }));
+      } else {
+        const updatedResource = result.rows[0];
+        const oldQty = resourceCheck.rows[0].quantity;
+        const newQty = updatedResource.quantity;
+        const threshold = updatedResource.low_stock_threshold;
+
+        if (quantity !== undefined && newQty < threshold && newQty !== oldQty) {
+          const message = `Warning: Resource "${updatedResource.name}" is low in stock (${newQty} remaining).`;
+          
+          const resourceOwnerId = updatedResource.user_id;
+          const ownerDetailsResult = await pool.query('SELECT email, group_id FROM users WHERE id = $1', [resourceOwnerId]);
+
+          if (ownerDetailsResult.rows.length > 0) {
+            const owner = ownerDetailsResult.rows[0];
+            if (owner.group_id) {
+              const groupMembers = await pool.query('SELECT id, email FROM users WHERE group_id = $1', [owner.group_id]);
+              for (const member of groupMembers.rows) {
+                await pool.query(
+                  'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
+                  [message, updatedResource.id, 'low_stock', member.id]
+                );
+                if (member.email) {
+                  sendNotificationEmail(
+                    member.email,
+                    `Low Stock Alert: ${updatedResource.name}`,
+                    message
+                  ).catch(err => console.error(`Failed to send low stock email to ${member.email}:`, err));
+                }
+              }
+            } else {
               await pool.query(
                 'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
-                [message, updatedResource.id, 'low_stock', member.id]
+                [message, updatedResource.id, 'low_stock', resourceOwnerId]
               );
-              if (member.email) {
+              if (owner.email) {
                 sendNotificationEmail(
-                  member.email,
+                  owner.email,
                   `Low Stock Alert: ${updatedResource.name}`,
                   message
-                ).catch(err => console.error(`Failed to send low stock email to ${member.email}:`, err));
+                ).catch(err => console.error(`Failed to send low stock email to ${owner.email}:`, err));
               }
-            }
-          } else {
-            await pool.query(
-              'INSERT INTO notifications (message, resource_id, type, user_id) VALUES ($1, $2, $3, $4)',
-              [message, updatedResource.id, 'low_stock', resourceOwnerId]
-            );
-            if (owner.email) {
-              sendNotificationEmail(
-                owner.email,
-                `Low Stock Alert: ${updatedResource.name}`,
-                message
-              ).catch(err => console.error(`Failed to send low stock email to ${owner.email}:`, err));
             }
           }
         }
-      }
 
-      const oldExpDate = originalResource.expiration_date;
-      const newExpDate = updatedResource.expiration_date;
-      if (data.hasOwnProperty('expiration_date') && oldExpDate !== newExpDate) {
-        checkResourceExpirations().catch(err => console.error("Error running expiration checker after resource update:", err));
-      }
+        const oldExpDate = resourceCheck.rows[0].expiration_date;
+        const newExpDate = updatedResource.expiration_date;
+        if (data.hasOwnProperty('expiration_date') && oldExpDate !== newExpDate) {
+          checkResourceExpirations().catch(err => console.error("Error running expiration checker after resource update:", err));
+        }
 
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(updatedResource));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(updatedResource));
+      }
+    } catch (dbErr) {
+      console.error('DB Error on PUT /api/resources:', dbErr.stack);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Database error while updating resource.', details: dbErr.message }));
     }
     return true;
   }

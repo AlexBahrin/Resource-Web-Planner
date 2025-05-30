@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/categories');
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Failed to load categories. Server returned an error.' }));
+                const errorData = await response.json().catch(() => ({message: 'Failed to load categories. Server returned an error.'}));
                 throw new Error(errorData.message || `HTTP error! ${response.status}`);
             }
             const categories = await response.json();
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', (event) => {
                 const categoryId = event.target.dataset.id;
                 const categoryName = event.target.dataset.name;
-                populateFormForEdit({ id: categoryId, name: categoryName });
+                populateFormForEdit({id: categoryId, name: categoryName});
             });
         });
 
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryNameInput.value = category.name;
         formSubmitButton.textContent = 'Update Category';
         cancelEditBtn.style.display = 'inline-block';
-        window.scrollTo({ top: addCategoryForm.offsetTop - 20, behavior: 'smooth' });
+        window.scrollTo({top: addCategoryForm.offsetTop - 20, behavior: 'smooth'});
     }
 
     function resetForm() {
@@ -93,14 +93,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name: categoryName }),
+                body: JSON.stringify({name: categoryName}),
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: `Failed to ${categoryId ? 'update' : 'add'} category. Server returned an error.` }));
+                const errorData = await response.json().catch(() => ({message: `Failed to ${categoryId ? 'update' : 'add'} category. Server returned an error.`}));
                 throw new Error(errorData.message || `HTTP error! ${response.status}`);
             }
-            
+
             resetForm();
             fetchCategories();
             alert(`Category ${categoryId ? 'updated' : 'added'} successfully!`);
@@ -119,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'DELETE',
             });
             if (!response.ok) {
-                let errorData = { message: `Request failed with status: ${response.status} ${response.statusText}` };
-                 if (response.status !== 204) {
+                let errorData = {message: `Request failed with status: ${response.status} ${response.statusText}`};
+                if (response.status !== 204) {
                     try {
                         const serverError = await response.json();
                         errorData.message = serverError.error || serverError.message || errorData.message;

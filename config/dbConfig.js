@@ -1,10 +1,10 @@
 const { Pool } = require('pg');
 
 const dbConfig = {
-  user: 'postgres',       
+  user: 'postgres',
   host: 'localhost',
   database: 'rew_db', 
-  password: 'admin', 
+  password: 'admin',
   port: 5432,
 };
 
