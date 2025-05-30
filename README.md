@@ -10,7 +10,7 @@
 
 **A sophisticated web-based inventory management solution with collaborative features and intelligent automation**
 
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🎯 Features](#-key-features) • [🏗️ Architecture](#️-architecture) • [📊 Demo](#-demo)
+[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🎯 Features](#-key-features) • [🏗️ Architecture](#️-architecture) • [📊 Demo](https://resource-web-planner.onrender.com)
 
 </div>
 
@@ -25,9 +25,7 @@
 - [🚀 Quick Start](#-quick-start)
 - [📖 API Documentation](#-api-documentation)
 - [🔧 Configuration](#-configuration)
-- [🧪 Testing](#-testing)
 - [📊 Screenshots](#-screenshots)
-- [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 
 ---
@@ -102,30 +100,6 @@ The **Resource Web Planner** is a comprehensive web application designed to stre
 
 Our system follows the **C4 Model** architecture principles, ensuring scalability, maintainability, and clear separation of concerns.
 
-### 🏛️ **System Architecture Overview**
-
-```mermaid
-graph TB
-    A[Web Browser] --> B[Node.js Web Server]
-    B --> C[PostgreSQL Database]
-    B --> D[Email Service]
-    B --> E[File System]
-    
-    subgraph "Application Layers"
-        F[Authentication Layer]
-        G[Business Logic Layer]
-        H[Data Access Layer]
-        I[Background Services]
-    end
-    
-    B --> F
-    F --> G
-    G --> H
-    H --> C
-    I --> C
-    I --> D
-```
-
 ### 🧩 **Core Components**
 
 - **🌐 HTTP Server**: Handles routing and request processing
@@ -169,8 +143,8 @@ graph TB
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/inventory-management-system.git
-   cd inventory-management-system
+   git clone https://github.com/AlexBahrin/Resource-Web-Planner.git
+   cd Resource-Web-Planner
    ```
 
 2. **Install dependencies**
@@ -178,52 +152,47 @@ graph TB
    npm install
    ```
 
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database and email configuration
-   ```
-
-4. **Set up the database**
+3. **Set up the database**
    ```bash
    # Create PostgreSQL database
-   createdb inventory_management
+   createdb db_name
    
    # The application will auto-initialize the schema on first run
    ```
 
-5. **Start the application**
+4. **Start the application**
    ```bash
    npm start
    ```
 
-6. **Access the application**
+5. **Access the application**
    ```
    Open your browser and navigate to: http://localhost:8087
    ```
 
 ### 🔧 Environment Configuration
 
-Create a `.env` file in the root directory:
-
 ```env
 # Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=inventory_management
-DB_USER=your_username
-DB_PASSWORD=your_password
+const dbConfig = {
+  user: 'your_user',
+  host: 'localhost',
+  database: 'db_name', 
+  password: 'password',
+  port: 5432,
+};
 
 # Email Configuration
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_USER=your_email@example.com
-SMTP_PASSWORD=your_email_password
+const transporter = nodemailer.createTransport({
+  host: 'smtp.ethereal.email',
+  port: 587,
+  secure: false,
+  auth: {
+    user: 'your_email',
+    pass: 'password',
+  },
+});
 
-# Application Configuration
-PORT=8087
-SESSION_SECRET=your_session_secret
-NODE_ENV=development
 ```
 
 ---
@@ -307,105 +276,26 @@ The system includes automated monitoring tasks:
 
 ---
 
-## 🧪 Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run specific test suite
-npm run test:auth
-npm run test:resources
-npm run test:groups
-
-# Run with coverage
-npm run test:coverage
-```
-
-### Test Categories
-
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: API endpoint testing
-- **Security Tests**: Authentication and authorization
-- **Performance Tests**: Load and stress testing
-
----
-
 ## 📊 Screenshots
 
 <div align="center">
 
 ### 🏠 Dashboard Overview
-![Dashboard](https://via.placeholder.com/800x400/2c3e50/ffffff?text=Dashboard+Overview)
+![Dashboard](https://i.imgur.com/vRaQXOd.jpeg)
 
-### 📦 Resource Management
-![Resources](https://via.placeholder.com/800x400/3498db/ffffff?text=Resource+Management)
+### 📦 Category Management
+![Category](https://i.imgur.com/eVvqWmA.jpeg)
 
-### 👥 Group Collaboration
-![Groups](https://via.placeholder.com/800x400/27ae60/ffffff?text=Group+Collaboration)
+### 📦 Resource Collaboration
+![Resource](https://i.imgur.com/fvNBRAi.jpeg)
+![Resource](https://i.imgur.com/zjWtjEq.jpeg)
+
+### 🔔 Notifications Management
+![Notifications](https://i.imgur.com/9yc0g9e.png)
 
 ### 📊 Analytics Dashboard
-![Analytics](https://via.placeholder.com/800x400/e74c3c/ffffff?text=Analytics+Dashboard)
-
+![Analytics](https://i.imgur.com/bDKJwEg.png)
 </div>
-
----
-
-## 🚀 Deployment
-
-### 🐳 Docker Deployment
-
-```dockerfile
-# Dockerfile example
-FROM node:16-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --production
-COPY . .
-EXPOSE 8087
-CMD ["npm", "start"]
-```
-
-### ☁️ Cloud Deployment Options
-
-- **Heroku**: Easy deployment with PostgreSQL add-on
-- **AWS**: EC2 + RDS for production environments
-- **DigitalOcean**: Droplets with managed PostgreSQL
-- **Azure**: App Service + Azure Database for PostgreSQL
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### 🔄 Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### 📋 Code Standards
-
-- Follow ESLint configuration
-- Maintain test coverage above 80%
-- Document all public APIs
-- Use meaningful commit messages
-
----
-
-## 📈 Roadmap
-
-- [ ] **Mobile App**: React Native companion app
-- [ ] **Advanced Analytics**: Machine learning insights
-- [ ] **API v2**: GraphQL implementation
-- [ ] **Multi-tenant**: Enterprise multi-organization support
-- [ ] **Barcode Scanning**: Mobile barcode integration
-- [ ] **Blockchain**: Supply chain tracking
 
 ---
 
@@ -423,15 +313,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Node.js Community**: For the robust runtime environment
 
 ---
-
-<div align="center">
-
-**Made with ❤️ by [Your Name](https://github.com/yourusername)**
-
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/inventory-management-system?style=social)](https://github.com/yourusername/inventory-management-system/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/yourusername/inventory-management-system?style=social)](https://github.com/yourusername/inventory-management-system/network)
-[![GitHub issues](https://img.shields.io/github/issues/yourusername/inventory-management-system)](https://github.com/yourusername/inventory-management-system/issues)
-
-⭐ **Star this repository if you found it helpful!** ⭐
-
-</div>
