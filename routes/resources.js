@@ -791,13 +791,28 @@ async function handleResources(req, res) {
     }
 
     try {
-      const resourceResult = await pool.query('SELECT * FROM resources WHERE id = $1 AND user_id = $2', [resourceId, userId]);
+      // Get user's group information
+      const userGroupRes = await pool.query('SELECT group_id FROM users WHERE id = $1', [userId]);
+      const userGroupId = userGroupRes.rows.length > 0 ? userGroupRes.rows[0].group_id : null;
+
+      // Get resource with owner's group information
+      const resourceQuery = 'SELECT r.*, u.group_id AS owner_group_id FROM resources r JOIN users u ON r.user_id = u.id WHERE r.id = $1';
+      const resourceResult = await pool.query(resourceQuery, [resourceId]);
+      
       if (resourceResult.rows.length === 0) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Resource not found or not authorized to update.' }));
+        res.end(JSON.stringify({ error: 'Resource not found.' }));
         return true;
       }
+      
       const currentResource = resourceResult.rows[0];
+      
+      // Check authorization: user owns the resource OR user is in the same group as the resource owner
+      if (currentResource.user_id !== userId && !(userGroupId !== null && currentResource.owner_group_id === userGroupId)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Forbidden: You do not have permission to update this resource.' }));
+        return true;
+      }
       const oldQty = currentResource.quantity;
       const oldExpDate = currentResource.expiration_date ? new Date(currentResource.expiration_date).toISOString().split('T')[0] : null;
 
