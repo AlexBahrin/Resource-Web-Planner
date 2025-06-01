@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('stock-chart').getContext('2d');
     
     const lowStockCount = resources.filter(r =>
-      r.quantity !== null && r.low_stock_threshold !== null && r.quantity <= r.low_stock_threshold
+      r.quantity !== null && r.low_stock_threshold !== null && r.quantity <= r.low_stock_threshold && r.enable_low_stock_threshold === true
     ).length;
     
     const normalStockCount = resources.length - lowStockCount;

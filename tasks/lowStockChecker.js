@@ -10,7 +10,11 @@ async function checkLowStockResources() {
 
     try {
         const resourceResult = await pool.query(
-            "SELECT id, name, quantity, low_stock_threshold, user_id FROM resources WHERE quantity < low_stock_threshold"
+            `SELECT r.id, r.name, r.quantity, r.low_stock_threshold, r.user_id 
+             FROM resources r 
+             JOIN categories c ON r.category_id = c.id 
+             WHERE r.quantity < r.low_stock_threshold 
+             AND c.enable_low_stock_threshold = true`
         );
 
         if (resourceResult.rows.length === 0) {

@@ -34,10 +34,11 @@ async function handleStatistics(req, res) {
       
       const stockQuery = `
         SELECT 
-          COUNT(*) FILTER (WHERE quantity <= low_stock_threshold) as low_stock_count,
-          COUNT(*) FILTER (WHERE quantity > low_stock_threshold) as normal_stock_count
-        FROM resources
-        WHERE user_id = ANY($1::int[])
+          COUNT(*) FILTER (WHERE r.quantity <= r.low_stock_threshold AND c.enable_low_stock_threshold = true) as low_stock_count,
+          COUNT(*) FILTER (WHERE r.quantity > r.low_stock_threshold OR c.enable_low_stock_threshold = false) as normal_stock_count
+        FROM resources r
+        JOIN categories c ON r.category_id = c.id
+        WHERE r.user_id = ANY($1::int[])
       `;
       const stockResult = await pool.query(stockQuery, [targetUserIds]);
       

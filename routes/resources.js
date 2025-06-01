@@ -640,7 +640,7 @@ async function handleResources(req, res) {
       console.log('POST /api/resources - Resource created:', newResource);
 
 
-      if (newResource.quantity < newResource.low_stock_threshold) {
+      if (categorySettings.enable_low_stock_threshold && newResource.quantity < newResource.low_stock_threshold) {
         const message = `Warning: Resource "${newResource.name}" is low in stock (${newResource.quantity} remaining).`;
         const ownerDetails = await pool.query('SELECT email, group_id FROM users WHERE id = $1', [userId]);
         if (ownerDetails.rows.length > 0) {
@@ -935,7 +935,7 @@ async function handleResources(req, res) {
         const currentThreshold = updatedResource.low_stock_threshold;
         const currentNewExpDate = updatedResource.expiration_date ? new Date(updatedResource.expiration_date).toISOString().split('T')[0] : null;
 
-        if (currentNewQty < currentThreshold && currentNewQty !== oldQty) {
+        if (categorySettings.enable_low_stock_threshold && currentNewQty < currentThreshold && currentNewQty !== oldQty) {
           const message = `Warning: Resource "${updatedResource.name}" is low in stock (${currentNewQty} remaining).`;
           const resourceOwnerId = updatedResource.user_id;
           const ownerDetailsResult = await pool.query('SELECT email, group_id FROM users WHERE id = $1', [resourceOwnerId]);
