@@ -843,13 +843,14 @@ async function handleResources(req, res) {
         }
         newName = data.name.trim();
         if (newName !== currentResource.name) {
+            // Check for name conflicts within the resource owner's scope
             const existingResourceCheck = await pool.query(
                 'SELECT id FROM resources WHERE name = $1 AND user_id = $2 AND id != $3',
-                [newName, userId, resourceId]
+                [newName, currentResource.user_id, resourceId]
             );
             if (existingResourceCheck.rows.length > 0) {
                 res.writeHead(409, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Another resource with this name already exists.' }));
+                res.end(JSON.stringify({ error: 'Another resource with this name already exists for this user.' }));
                 return true;
             }
         }
@@ -928,7 +929,7 @@ async function handleResources(req, res) {
       }
 
       const updateResult = await pool.query(
-        'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5, expiration_date = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
+        'UPDATE resources SET name = $1, category_id = $2, quantity = $3, description = $4, low_stock_threshold = $5, expiration_date = $6 WHERE id = $7 RETURNING *',
         [
           newName,
           targetCategoryId,
@@ -936,8 +937,7 @@ async function handleResources(req, res) {
           newDescription,
           newLowStockThreshold,
           newExpirationDate,
-          resourceId,
-          userId
+          resourceId
         ]
       );
 
