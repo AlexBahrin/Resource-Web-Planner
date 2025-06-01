@@ -9,13 +9,26 @@ async function checkLowStockResources() {
     const now = new Date();
 
     try {
+        // Add explicit casting to ensure numeric comparison
         const resourceResult = await pool.query(
-            `SELECT r.id, r.name, r.quantity, r.low_stock_threshold, r.user_id 
+            `SELECT r.id, r.name, 
+                    CAST(r.quantity AS DECIMAL) as quantity, 
+                    CAST(r.low_stock_threshold AS DECIMAL) as low_stock_threshold, 
+                    r.user_id,
+                    c.enable_low_stock_threshold
              FROM resources r 
              JOIN categories c ON r.category_id = c.id 
-             WHERE r.quantity < r.low_stock_threshold 
+             WHERE CAST(r.quantity AS DECIMAL) < CAST(r.low_stock_threshold AS DECIMAL)
              AND c.enable_low_stock_threshold = true`
         );
+        
+        console.log(`[DEBUG] Found ${resourceResult.rows.length} potential low stock resources`);
+        
+        // Additional debug logging for each resource
+        resourceResult.rows.forEach(resource => {
+            console.log(`[DEBUG] Resource "${resource.name}": qty=${resource.quantity} (${typeof resource.quantity}), threshold=${resource.low_stock_threshold} (${typeof resource.low_stock_threshold}), category_enabled=${resource.enable_low_stock_threshold} (${typeof resource.enable_low_stock_threshold})`);
+            console.log(`[DEBUG] Numeric comparison: ${parseFloat(resource.quantity)} <= ${parseFloat(resource.low_stock_threshold)} = ${parseFloat(resource.quantity) <= parseFloat(resource.low_stock_threshold)}`);
+        });
 
         if (resourceResult.rows.length === 0) {
             console.log('No resources are currently below their low stock threshold.');

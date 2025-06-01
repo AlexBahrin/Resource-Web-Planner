@@ -2,10 +2,10 @@
   "name": "resource-web-planner",
   "version": "1.0.0",
   "description": "Resource Web Planner Application",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
